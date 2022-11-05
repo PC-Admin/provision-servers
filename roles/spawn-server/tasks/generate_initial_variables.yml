@@ -1,0 +1,127 @@
+
+# Append to server_vars.yml variable file (updatable)
+
+- name: Add slug_size line to inventory file
+  delegate_to: 127.0.0.1
+  lineinfile:
+    path: './inventory/host_vars/{{ server_url }}/vars.yml'
+    regexp: "^{{ item.key | regex_escape() }}:"
+    line: "{{ item.key }}: {{ item.value }}"
+    mode: '0600'
+    state: present
+  with_dict:
+    'slug_size': '"{{ new_slug_size }}"'
+
+- name: Add server_ipv4 line to inventory file
+  delegate_to: 127.0.0.1
+  lineinfile:
+    path: './inventory/host_vars/{{ server_url }}/vars.yml'
+    regexp: "^#? *{{ item.key | regex_escape() }}:"
+    line: "{{ item.key }}: {{ item.value }}"
+    mode: '0600'
+    state: present
+  with_dict:
+    'server_ipv4': '"{{ server_ipv4 }}"'
+  when: server_ipv4|length > 0
+
+- name: Add server_ipv6 line to inventory file
+  delegate_to: 127.0.0.1
+  lineinfile:
+    path: './inventory/host_vars/{{ server_url }}/vars.yml'
+    regexp: "^#? *{{ item.key | regex_escape() }}:"
+    line: "{{ item.key }}: {{ item.value }}"
+    mode: '0600'
+    state: present
+  with_dict:
+    'server_ipv6': '"{{ server_ipv6 }}"'
+  when: server_ipv6|length > 0
+
+- name: Add do_droplet_id line to inventory file
+  delegate_to: 127.0.0.1
+  lineinfile:
+    path: './inventory/host_vars/{{ server_url }}/vars.yml'
+    line: 'do_droplet_id: {{ new_server_info.data.droplet.id }}'
+    mode: '0600'
+    state: present
+
+#- name: Ensure SSH config file exists
+#  delegate_to: 127.0.0.1
+#  ansible.builtin.file:
+#    state: touch
+#    path: "/home/{{ lookup('env', 'USER') }}/.ssh/config"
+#    owner: "{{ lookup('env', 'USER') }}"
+#    group: "{{ lookup('env', 'USER') }}"
+#    mode: 0600
+
+- name: Add SSH config entry for every other host
+  delegate_to: 127.0.0.1
+  ansible.builtin.blockinfile:
+    path: "/home/{{ lookup('env', 'USER') }}/.ssh/config"
+    marker_begin: "BEGIN SSH config entry for {{ server_url }}"
+    marker_end: "END SSH config entry for {{ server_url }}"
+    block: |
+      Host {{ server_url }}
+          HostName {{ server_ip_final }}
+          User root
+          Port 22
+          IdentityFile {{ ssh_key_file_private }}
+          IdentitiesOnly=yes
+
+
+- name: Wait for SSH connection to become available, with 5 seconds between checks
+  delegate_to: "{{ server_url }}"
+  wait_for_connection:
+    sleep: 5
+
+# Create matrix_vars.yml variable file
+
+#- name: Install password generation script
+#  delegate_to: 127.0.0.1
+#  copy:
+#    src: ./roles/spawn-server/scripts/generate-initial-passwords.sh
+#    dest: /var/lib/awx/projects/hosting/generate-initial-passwords.sh
+#    mode: '0700'
+
+#- name: Check if matrix_vars.yml file already exists on AWX
+#  delegate_to: 127.0.0.1
+#  stat: 
+#    path: '/var/lib/awx/projects/clients/{{ member_id }}/{{ subscription_id }}/matrix_vars.yml'
+#  register: varsfile
+
+#- name: Generate initial matrix_vars.yml on AWX if it does not exist
+#  delegate_to: 127.0.0.1
+#  command: /var/lib/awx/projects/hosting/generate-initial-passwords.sh "{{ matrix_domain }}" "{{ awx_element_subdomain }}" "{{ client_email }}" "/var/lib/awx/projects/clients/{{ member_id }}/{{ subscription_id }}/matrix_vars.yml"
+#  when: varsfile.stat.exists == false
+
+
+# Create borg backup key file
+
+#- name: Generate borg backup password
+#  delegate_to: 127.0.0.1
+#  command: |
+#      openssl rand -hex 16
+#  register: borg_password
+#  no_log: True
+
+#- name: Check if borg_backup.yml already exists
+#  delegate_to: 127.0.0.1
+#  stat:
+#    path: '/var/lib/awx/projects/clients/{{ member_id }}/{{ subscription_id }}/borg_backup.yml'
+#  register: borg_backup_file
+
+#- name: Add entry to borg_backup.yml file locally on AWX
+#  delegate_to: 127.0.0.1
+#  lineinfile:
+#    path: '/var/lib/awx/projects/clients/{{ member_id }}/{{ subscription_id }}/borg_backup.yml'
+#    line: 'awx_backup_encryption_passphrase: {{ borg_password.stdout }}'
+#    mode: '0600'
+#    state: present
+#    create: yes
+#  when: not borg_backup_file.stat.exists
+
+#- name: Copy borg_backup.yml variables file to backup location
+#  delegate_to: 127.0.0.1
+#  copy:
+#    src: '/var/lib/awx/projects/clients/{{ member_id }}/{{ subscription_id }}/borg_backup.yml'
+#    dest: '/var/lib/awx/projects/backups/{{ matrix_domain }}-borg_backup.yml'
+#    mode: '0660'

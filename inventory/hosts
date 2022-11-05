@@ -1,0 +1,5 @@
+
+[testing_servers]
+matrix.testing.org ansible_host=matrix.testing.org ansible_ssh_user=root
+pg1.testing.org ansible_host=pg1.testing.org ansible_ssh_user=root
+pg2.testing.org ansible_host=pg1.testing.org ansible_ssh_user=root

@@ -1,0 +1,8 @@
+
+- name: "Creates digitalocean droplet, performs initial setup."
+  hosts: testing_servers
+  gather_facts: false
+
+  roles:
+    - delete-server
+

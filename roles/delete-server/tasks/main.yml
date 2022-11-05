@@ -1,0 +1,4 @@
+
+# Delete DigitalOcean Server:
+- import_tasks: "{{ role_path }}/tasks/delete_server.yml"
+  tags: always

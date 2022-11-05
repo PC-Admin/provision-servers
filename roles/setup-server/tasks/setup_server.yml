@@ -1,0 +1,113 @@
+
+- name: Change server locale
+  shell: update-locale LANG="C.UTF-8"
+
+- name: Update repositories and all packages on target machine
+  apt:
+    name: "*"
+    update_cache: yes
+
+- name: Install necessary utils on target machine
+  apt:
+    pkg:
+     - ansible
+     - etckeeper
+     - git
+     - openssl
+     - prometheus-node-exporter
+     - unattended-upgrades
+     - apt-listchanges
+
+- name: Configure unattended-upgrades 1
+  lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: '^\/\/      "origin=Debian,codename=\$\{distro_codename}-updates\";$'
+    line: '        "origin=Debian,codename=${distro_codename}-updates";'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Configure unattended-upgrades 2
+  lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: '^\/\/      "origin=Debian,codename=\$\{distro_codename}-proposed-updates\";$'
+    line: '        "origin=Debian,codename=${distro_codename}-proposed-updates";'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Configure unattended-upgrades 3
+  lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: '^\/\/      "o=Debian Backports,a=\$\{distro_codename}-backports,l=Debian Backports";$'
+    line: '        "o=Debian Backports,a=${distro_codename}-backports,l=Debian Backports";'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check if the swapfile exists
+  stat:
+    path: /swapfile
+  register: swapfile_result
+
+- name: Create swapfile with the right permissions
+  command: 'fallocate -l {{ swap_size }} /swapfile'
+  register: swapfile_new
+  args:
+    creates: /swapfile
+
+- name: Set correct permissions on swapfile
+  file:
+    path: '/swapfile'
+    owner: root
+    group: root
+    mode: '0600'
+  when: swapfile_new.delta is defined
+
+- name: Make swapfile
+  command: 'mkswap /swapfile'
+  when: swapfile_new.delta is defined
+  
+- name: Enable swapfile
+  command: 'swapon /swapfile'
+  when: swapfile_new.delta is defined
+
+- name: Make swapfile permanent in /etc/fstab
+  mount: name=none
+         src=/swapfile
+         fstype=swap
+         opts=sw
+         passno=0
+         dump=0
+         state=present
+
+- name: Examine if docker is already installed
+  shell: apt list docker-ce
+  register: docker_installed
+
+# Docker logs pruning, only applied if docker is already installed
+
+- name: Ensure docker config folder exists
+ 
+  file:
+    path: '/etc/docker/'
+    owner: root
+    group: root
+    mode: '0755'
+    state: directory
+  when: '"installed" in docker_installed.stdout'
+
+- name: Save docker config file, template
+ 
+  template:
+    src: '{{ role_path }}/templates/daemon.json.j2'
+    dest: '/etc/docker/daemon.json'
+  when: '"installed" in docker_installed.stdout'
+
+- name: Creates a crontab entry for trimming systemd logs
+ 
+  cron:
+    name: "Trim Systemd Logs"
+    user: root
+    special_time: daily
+    job: "sudo journalctl --vacuum-time=28d"

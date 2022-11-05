@@ -1,0 +1,12 @@
+
+# Spawn a Server
+- import_tasks: "{{ role_path }}/tasks/spawn_do_droplet.yml"
+  tags: always
+
+# Save server IPs
+- import_tasks: "{{ role_path }}/tasks/save_server_ips.yml"
+  tags: always
+  
+# Create initial variable files
+- import_tasks: "{{ role_path }}/tasks/generate_initial_variables.yml"
+  tags: always

@@ -1,0 +1,34 @@
+location:
+    source_directories:
+        - /matrix/
+        - /chroot/website/
+
+    one_file_system: true
+
+    repositories:
+        - {{ backup_server_hostname }}:{{ backup_server_directory }}/Clients/{{ matrix_domain }}/matrix/
+
+    exclude_caches: true
+    
+    exclude_patterns:
+        - '/matrix/postgres/data'
+        - '/matrix/synapse/storage/media-store/remote_content'
+
+storage:
+    compression: auto,zstd
+    encryption_passphrase: {{ awx_backup_encryption_passphrase }}
+    archive_name_format: '{hostname}-{now}'
+    checkpoint_interval: 600
+
+retention:
+    keep_daily: 7
+    keep_weekly: 4
+    prefix: '{hostname}-'
+
+consistency:
+    checks:
+        - repository
+        - archives
+
+    check_last: 3
+    prefix: '{hostname}-'
