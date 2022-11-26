@@ -72,6 +72,7 @@
   delegate_to: "{{ server_url }}"
   wait_for_connection:
     sleep: 5
+    timeout: 60
 
 # Create matrix_vars.yml variable file
 

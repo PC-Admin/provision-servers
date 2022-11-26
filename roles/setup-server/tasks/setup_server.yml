@@ -88,7 +88,6 @@
 # Docker logs pruning, only applied if docker is already installed
 
 - name: Ensure docker config folder exists
- 
   file:
     path: '/etc/docker/'
     owner: root
@@ -98,14 +97,12 @@
   when: '"installed" in docker_installed.stdout'
 
 - name: Save docker config file, template
- 
   template:
     src: '{{ role_path }}/templates/daemon.json.j2'
     dest: '/etc/docker/daemon.json'
   when: '"installed" in docker_installed.stdout'
 
 - name: Creates a crontab entry for trimming systemd logs
- 
   cron:
     name: "Trim Systemd Logs"
     user: root

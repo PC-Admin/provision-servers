@@ -4,5 +4,5 @@
   tags: always
 
 # Perform firewall setup
-- import_tasks: "{{ role_path }}/tasks/setup_firewall.yml"
-  tags: setup-firewall
+#- import_tasks: "{{ role_path }}/tasks/setup_firewall.yml"
+#  tags: setup-firewall
