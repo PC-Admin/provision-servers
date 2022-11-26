@@ -1,6 +1,6 @@
-# Ansible Provision Servers
+# Provision Servers
 
-The provision stage configures the DigitalOcean servers that a Matrix service can exist in. 
+This playbook configures DigitalOcean servers that a Matrix service can exist in. 
 
 A playbook I created to speed up testing.
 
