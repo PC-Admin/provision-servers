@@ -1,9 +1,4 @@
-
-- name:
-  delegate_to: 127.0.0.1
-  command: |
-    perl -e 'print " " x (24 - length( '{{ server_url }}' ))';
-  register: dns_spaces
+---
 
 - debug:
     msg: 
@@ -11,16 +6,6 @@
     - "following records:"
     - Type    Host                    Priority  Weight  Port   Target
     - AAAA    matrix                  -         -       -      {{ server_ipv6 }}
-    - CNAME   dimension               -         -       -      matrix.{{ server_url }}
-    - CNAME   {{ server_url }}{{ dns_spaces.stdout }}-         -       -      matrix.{{ server_url }}
-    - CNAME   jitsi                   -         -       -      matrix.{{ server_url }}
-    - SRV     _matrix-identity._tcp   10        0       443    matrix.{{ server_url }}
-    - "-"
-    - Setting the IPv6 record is optional. If you need help doing this please contact us.
-    - "-"
-    - You also decided that your base domain was already in use, you'll need to configure
-    - "a .well-known entry for your existing web service before you proceed:" 
-    - https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-well-known.md
   when: ( server_ipv4 | length == 0 ) and ( server_ipv6 | length > 0 )
 
 - debug:
@@ -29,16 +14,6 @@
     - "following records:"
     - Type    Host                    Priority  Weight  Port   Target
     - A       matrix                  -         -       -      {{ server_ipv4 }}
-    - CNAME   dimension               -         -       -      matrix.{{ server_url }}
-    - CNAME   {{ server_url }}{{ dns_spaces.stdout }}-         -       -      matrix.{{ server_url }}
-    - CNAME   jitsi                   -         -       -      matrix.{{ server_url }}
-    - SRV     _matrix-identity._tcp   10        0       443    matrix.{{ server_url }}
-    - "-"
-    - Setting the IPv6 record is optional. If you need help doing this please contact us.
-    - "-"
-    - You also decided that your base domain was already in use, you'll need to configure
-    - "a .well-known entry for your existing web service before you proceed:" 
-    - https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-well-known.md
   when: ( server_ipv4 | length > 0 ) and ( server_ipv6 | length == 0 )
 
 - debug:
@@ -48,14 +23,4 @@
     - Type    Host                    Priority  Weight  Port   Target
     - A       matrix                  -         -       -      {{ server_ipv4 }}
     - AAAA    matrix                  -         -       -      {{ server_ipv6 }}
-    - CNAME   dimension               -         -       -      matrix.{{ server_url }}
-    - CNAME   {{ server_url }}{{ dns_spaces.stdout }}-         -       -      matrix.{{ server_url }}
-    - CNAME   jitsi                   -         -       -      matrix.{{ server_url }}
-    - SRV     _matrix-identity._tcp   10        0       443    matrix.{{ server_url }}
-    - "-"
-    - Setting the IPv6 record is optional. If you need help doing this please contact us.
-    - "-"
-    - You also decided that your base domain was already in use, you'll need to configure
-    - "a .well-known entry for your existing web service before you proceed:" 
-    - https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-well-known.md
   when: ( server_ipv4 | length > 0 ) and ( server_ipv6 | length > 0 )

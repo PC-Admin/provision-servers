@@ -1,0 +1,39 @@
+---
+
+- name: Delete the A record to point to the servers IP
+  delegate_to: 127.0.0.1
+  community.general.cloudflare_dns:
+    zone: '{{ cloudflare_zone_name }}'
+    record: '{{ server_subdomain }}'
+    type: A
+    value: '{{ server_ipv4 }}'
+    account_email: '{{ cloudflare_email }}'
+    account_api_token: '{{ cloudflare_api_token }}'
+    state: absent
+  when: ( server_ipv4 | length > 0 )
+  register: record_ipv4
+
+- name: Print the deletion status.
+  delegate_to: 127.0.0.1
+  ansible.builtin.debug:
+    msg: Record IPv4 - {{ record_ipv4 }}
+  when: ( server_ipv4 | length > 0 )
+
+- name: Delete the AAAA record to point to the servers IP
+  delegate_to: 127.0.0.1
+  community.general.cloudflare_dns:
+    zone: '{{ cloudflare_zone_name }}'
+    record: '{{ server_subdomain }}'
+    type: AAAA
+    value: '{{ server_ipv6 }}'
+    account_email: '{{ cloudflare_email }}'
+    account_api_token: '{{ cloudflare_api_token }}'
+    state: absent
+  when: ( server_ipv6 | length > 0 )
+  register: record_ipv6
+
+- name: Print the deletion status.
+  delegate_to: 127.0.0.1
+  ansible.builtin.debug:
+    msg: Record IPv6 - {{ record_ipv6 }}
+  when: ( server_ipv6 | length > 0 )

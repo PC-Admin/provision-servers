@@ -1,8 +1,4 @@
 
-# Create fake DNS record with hosts file:
-#- import_tasks: "{{ role_path }}/tasks/edit_hosts.yml"
-#  tags: always
-
 # Issue DNS advice:
 - import_tasks: "{{ role_path }}/tasks/dns_advice.yml"
   tags: always

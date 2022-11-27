@@ -40,9 +40,12 @@
   delegate_to: 127.0.0.1
   lineinfile:
     path: './inventory/host_vars/{{ server_url }}/vars.yml'
-    line: 'do_droplet_id: {{ new_server_info.data.droplet.id }}'
+    regexp: "^{{ item.key }}:.*$"
+    line: "{{ item.key }}: {{ item.value }}"
     mode: '0600'
     state: present
+  with_dict:
+    'do_droplet_id': '{{ new_server_info.data.droplet.id }}'
 
 #- name: Ensure SSH config file exists
 #  delegate_to: 127.0.0.1
@@ -67,62 +70,27 @@
           IdentityFile {{ ssh_key_file_private }}
           IdentitiesOnly=yes
 
+- name: Add HOSTALIASES environment variable to ~/.profile
+  delegate_to: 127.0.0.1
+  lineinfile:
+    path: '~/.profile'
+    create: true
+    line: "HOSTALIASES ~/.hosts"
+    mode: '0600'
+    state: present
+
+- name: Add host entry to ~/.hosts file
+  delegate_to: 127.0.0.1
+  lineinfile:
+    path: '~/.hosts'
+    create: true
+    regexp: "^.*{{ server_url }}$"
+    line: "{{ server_ipv4 }} {{ server_url }}"
+    mode: '0600'
+    state: present
 
 - name: Wait for SSH connection to become available, with 5 seconds between checks
   delegate_to: "{{ server_url }}"
   wait_for_connection:
     sleep: 5
     timeout: 60
-
-# Create matrix_vars.yml variable file
-
-#- name: Install password generation script
-#  delegate_to: 127.0.0.1
-#  copy:
-#    src: ./roles/spawn-server/scripts/generate-initial-passwords.sh
-#    dest: /var/lib/awx/projects/hosting/generate-initial-passwords.sh
-#    mode: '0700'
-
-#- name: Check if matrix_vars.yml file already exists on AWX
-#  delegate_to: 127.0.0.1
-#  stat: 
-#    path: '/var/lib/awx/projects/clients/{{ member_id }}/{{ subscription_id }}/matrix_vars.yml'
-#  register: varsfile
-
-#- name: Generate initial matrix_vars.yml on AWX if it does not exist
-#  delegate_to: 127.0.0.1
-#  command: /var/lib/awx/projects/hosting/generate-initial-passwords.sh "{{ matrix_domain }}" "{{ awx_element_subdomain }}" "{{ client_email }}" "/var/lib/awx/projects/clients/{{ member_id }}/{{ subscription_id }}/matrix_vars.yml"
-#  when: varsfile.stat.exists == false
-
-
-# Create borg backup key file
-
-#- name: Generate borg backup password
-#  delegate_to: 127.0.0.1
-#  command: |
-#      openssl rand -hex 16
-#  register: borg_password
-#  no_log: True
-
-#- name: Check if borg_backup.yml already exists
-#  delegate_to: 127.0.0.1
-#  stat:
-#    path: '/var/lib/awx/projects/clients/{{ member_id }}/{{ subscription_id }}/borg_backup.yml'
-#  register: borg_backup_file
-
-#- name: Add entry to borg_backup.yml file locally on AWX
-#  delegate_to: 127.0.0.1
-#  lineinfile:
-#    path: '/var/lib/awx/projects/clients/{{ member_id }}/{{ subscription_id }}/borg_backup.yml'
-#    line: 'awx_backup_encryption_passphrase: {{ borg_password.stdout }}'
-#    mode: '0600'
-#    state: present
-#    create: yes
-#  when: not borg_backup_file.stat.exists
-
-#- name: Copy borg_backup.yml variables file to backup location
-#  delegate_to: 127.0.0.1
-#  copy:
-#    src: '/var/lib/awx/projects/clients/{{ member_id }}/{{ subscription_id }}/borg_backup.yml'
-#    dest: '/var/lib/awx/projects/backups/{{ matrix_domain }}-borg_backup.yml'
-#    mode: '0660'

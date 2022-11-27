@@ -20,33 +20,31 @@
 # so-32vcpu-256gb
 
 # DigitalOcean Images:
-# AlmaLinux 8	almalinux-8-x64
-# AlmaLinux	AlmaLinux 9	almalinux-9-x64
-# CentOS	9 Stream x64	centos-stream-9-x64
-# CentOS	8 Stream x64	centos-stream-8-x64
-# CentOS	7 x64	centos-7-x64
 # Debian	10 x64	debian-10-x64
 # Debian	11 x64	debian-11-x64
-# Fedora	36 x64	fedora-36-x64
-# Fedora	35 x64	fedora-35-x64
-# RancherOS	1.5.8 x64	rancheros
-# Rocky Linux	RockyLinux 9.0 x64	rockylinux-9-x64
-# Rocky Linux	RockyLinux 8.5 x64	rockylinux-8-5-x64
-# Rocky Linux	RockyLinux 8.6 x64	rockylinux-8-x64
-# Rocky Linux	RockyLinux 8.4 x64	rockylinux-8-4-x64
-# Ubuntu	22.10 x64	ubuntu-22-10-x64
 # Ubuntu	22.04 (LTS) x64	ubuntu-22-04-x64
-# Ubuntu	18.04 (LTS) x64	ubuntu-18-04-x64
 # Ubuntu	20.04 (LTS) x64	ubuntu-20-04-x64
 
-# DigitalOcean Settings
+# Server Settings
 server_url: pg1.testing.org
+server_subdomain: pg1
+
+# If the server will host the following services
+matrix_service: true
+k8s_service: false
+
+# DigitalOcean Settings
 do_droplet_name: pg1.testing.org
 do_droplet_region: sgp1
 new_slug_size: s-2vcpu-4gb
 swap_size: "4G"
-do_api_token: 85...
+do_api_token: << DigitalOcean API Token >>
 do_image: debian-11-x64
+
+# Cloudflare Settings
+cloudflare_email: michael@perthchat.org
+cloudflare_api_token: << CloudFlare Users Global Token >>
+cloudflare_zone_name: testing.org
 
 # Public SSH Key
 ssh_key_file_public: ~/.ssh/somekey_ed25519.pub

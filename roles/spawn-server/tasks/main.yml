@@ -6,7 +6,10 @@
 # Save server IPs
 - import_tasks: "{{ role_path }}/tasks/save_server_ips.yml"
   tags: always
-  
+
+# Create Cloudflare DNS entry
+- import_tasks: "{{ role_path }}/tasks/cloudflare_dns.yml"
+
 # Create initial variable files
 - import_tasks: "{{ role_path }}/tasks/generate_initial_variables.yml"
   tags: always
