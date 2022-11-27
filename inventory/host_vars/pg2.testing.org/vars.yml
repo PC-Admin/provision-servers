@@ -38,12 +38,10 @@ do_droplet_name: pg2.testing.org
 do_droplet_region: sgp1
 new_slug_size: s-2vcpu-4gb
 swap_size: "4G"
-do_api_token: << DigitalOcean API Token >>
 do_image: debian-11-x64
 
 # Cloudflare Settings
 cloudflare_email: michael@perthchat.org
-cloudflare_api_token: << CloudFlare Users Global Token >>
 cloudflare_zone_name: testing.org
 
 # Public SSH Key
