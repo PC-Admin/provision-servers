@@ -1,15 +1,17 @@
 # Ansible Provision Servers
 
-The provision stage configures the DigitalOcean servers that a Matrix service can exist in. 
+The provision stage configures the DigitalOcean servers that a service can exist in.
 
-A playbook I created to speed up testing.
+It can also add/remove DNS records automatically using CloudFlare, I created it to speed up testing.
 
 
 ## Setup Servers
 
-1) Configure the inventory files for all the desired hosts appropriately.
+1) Configure the [inventory/](inventory/) files for all the desired hosts appropriately.
 
-2) Run the setup.yml playbook:
+2) Configure the DigitalOcean and CloudFlare API keys in [group_vars/all](group_vars/all).
+
+3) Run the setup.yml playbook:
 
 `$ ansible-playbook -v -i inventory/hosts setup.yml`
 
