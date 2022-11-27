@@ -27,7 +27,7 @@
 
 # Server Settings
 server_url: matrix.testing.org
-server_subdomain: matrix
+server_subdomains: [ 'matrix' ]
 
 # If the server will host the following services
 matrix_service: true

@@ -11,7 +11,7 @@ It can also add/remove DNS records automatically using CloudFlare, I created it 
 
 2) Configure the DigitalOcean and CloudFlare API keys in [group_vars/all](group_vars/all).
 
-3) Run the setup.yml playbook:
+3) Run the setup.yml playbook and monitor for the interactive input:
 
 `$ ansible-playbook -v -i inventory/hosts setup.yml`
 

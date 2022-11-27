@@ -1,43 +1,41 @@
 ---
 
-- name: Create/update an A record to point to the servers IP
+- name: Create A records to point to the servers IP
   delegate_to: 127.0.0.1
   community.general.cloudflare_dns:
     zone: '{{ cloudflare_zone_name }}'
-    record: '{{ server_subdomain }}'
+    record: '{{ item }}'
     type: A
     value: '{{ server_ipv4 }}'
     account_email: '{{ cloudflare_email }}'
     account_api_token: '{{ cloudflare_api_token }}'
     state: present
+  with_items: "{{ server_subdomains }}"
   when: ( server_ipv4 | length > 0 )
   register: record_ipv4
-  tags: [ 'never', 'cloudflare-dns' ]
 
 - name: Print the new IPv4 DNS record
   delegate_to: 127.0.0.1
   ansible.builtin.debug:
     msg: Record IPv4 - {{ record_ipv4 }}
   when: ( server_ipv4 | length > 0 )
-  tags: [ 'never', 'cloudflare-dns' ]
 
-- name: Create/update an AAAA record to point to the servers IP
+- name: Create AAAA records to point to the servers IP
   delegate_to: 127.0.0.1
   community.general.cloudflare_dns:
     zone: '{{ cloudflare_zone_name }}'
-    record: '{{ server_subdomain }}'
+    record: '{{ item }}'
     type: AAAA
     value: '{{ server_ipv6 }}'
     account_email: '{{ cloudflare_email }}'
     account_api_token: '{{ cloudflare_api_token }}'
     state: present
+  with_items: "{{ server_subdomains }}"
   when: ( server_ipv6 | length > 0 )
   register: record_ipv6
-  tags: [ 'never', 'cloudflare-dns' ]
 
 - name: Print the new IPv6 DNS record
   delegate_to: 127.0.0.1
   ansible.builtin.debug:
     msg: Record IPv6 - {{ record_ipv6 }}
   when: ( server_ipv6 | length > 0 )
-  tags: [ 'never', 'cloudflare-dns' ]

@@ -1,15 +1,16 @@
 ---
 
-- name: Delete the A record to point to the servers IP
+- name: Delete A records that point to the servers IP
   delegate_to: 127.0.0.1
   community.general.cloudflare_dns:
     zone: '{{ cloudflare_zone_name }}'
-    record: '{{ server_subdomain }}'
+    record: '{{ item }}'
     type: A
     value: '{{ server_ipv4 }}'
     account_email: '{{ cloudflare_email }}'
     account_api_token: '{{ cloudflare_api_token }}'
     state: absent
+  with_items: "{{ server_subdomains }}"
   when: ( server_ipv4 | length > 0 )
   register: record_ipv4
 
@@ -19,16 +20,17 @@
     msg: Record IPv4 - {{ record_ipv4 }}
   when: ( server_ipv4 | length > 0 )
 
-- name: Delete the AAAA record to point to the servers IP
+- name: Delete AAAA records that point to the servers IP
   delegate_to: 127.0.0.1
   community.general.cloudflare_dns:
     zone: '{{ cloudflare_zone_name }}'
-    record: '{{ server_subdomain }}'
+    record: '{{ item }}'
     type: AAAA
     value: '{{ server_ipv6 }}'
     account_email: '{{ cloudflare_email }}'
     account_api_token: '{{ cloudflare_api_token }}'
     state: absent
+  with_items: "{{ server_subdomains }}"
   when: ( server_ipv6 | length > 0 )
   register: record_ipv6
 
