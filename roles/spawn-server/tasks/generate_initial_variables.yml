@@ -89,6 +89,17 @@
     mode: '0600'
     state: present
 
+- name: Check known_hosts for {{ inventory_hostname }}
+  local_action: shell ssh-keygen -F {{ inventory_hostname }}
+  register: has_entry_in_known_hosts_file
+  changed_when: false
+  ignore_errors: true
+
+- name: Ignore host key for {{ inventory_hostname }} on first run
+  set_fact:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+  when: has_entry_in_known_hosts_file.rc == 1
+
 - name: Wait for SSH connection to become available, with 5 seconds between checks
   delegate_to: "{{ server_url }}"
   wait_for_connection:
