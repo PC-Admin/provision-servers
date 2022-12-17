@@ -2,21 +2,36 @@
 - name: Change server locale
   shell: update-locale LANG="C.UTF-8"
 
-- name: Update repositories and all packages on target machine
+- name: Update repositories
+  apt:
+    update_cache: yes
+  register: apt_status
+  until: apt_status is success
+  delay: 6
+  retries: 10
+
+- name: Upgrade all packages on target machine
   apt:
     name: "*"
-    update_cache: yes
+    state: latest
+  register: apt_status
+  until: apt_status is success
+  delay: 6
+  retries: 10
 
-- name: Install necessary utils on target machine
+- name: Install necessary packages on target machine
   apt:
     pkg:
-     - ansible
      - etckeeper
      - git
      - openssl
      - prometheus-node-exporter
      - unattended-upgrades
      - apt-listchanges
+  register: apt_status
+  until: apt_status is success
+  delay: 6
+  retries: 10
 
 - name: Get Debian/Ubuntu version from server
   command: lsb_release -c

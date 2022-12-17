@@ -1,8 +1,8 @@
 # Ansible Provision Servers
 
-The provision stage configures the DigitalOcean servers that a service can exist in.
+This playbook configures 1 to N servers using DigitalOcean, it also adds/removes the DNS records for each server automatically using CloudFlare.
 
-It can also add/remove DNS records automatically using CloudFlare, I created it to speed up testing.
+I created it as a devops tool to speed up testing.
 
 
 ## Setup Servers
@@ -18,7 +18,7 @@ It can also add/remove DNS records automatically using CloudFlare, I created it 
 Or even easier, provision a server with automatic CloudFlare DNS configuration:
 
 `$ ansible-playbook -v -i inventory/hosts --tags "cloudflare-dns" setup.yml`
-
+1
 
 ## Removing Servers
 

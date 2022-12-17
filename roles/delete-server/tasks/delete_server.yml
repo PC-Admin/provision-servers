@@ -17,3 +17,12 @@
 - debug:
     msg: "{{ deleted_server_info }}"
   when: do_droplet_id is defined
+
+- name: Remove host entry to ~/.hosts file
+  delegate_to: 127.0.0.1
+  lineinfile:
+    path: '~/.hosts'
+    create: true
+    regexp: "^.*{{ server_url }}$"
+    mode: '0600'
+    state: absent
