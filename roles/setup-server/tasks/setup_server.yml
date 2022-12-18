@@ -1,3 +1,4 @@
+---
 
 - name: Change server locale
   shell: update-locale LANG="C.UTF-8"
@@ -22,7 +23,6 @@
 - name: Install necessary packages on target machine
   apt:
     pkg:
-     - etckeeper
      - git
      - openssl
      - prometheus-node-exporter
@@ -32,6 +32,19 @@
   until: apt_status is success
   delay: 6
   retries: 10
+
+- name: Copy file with owner and permissions
+  ansible.builtin.copy:
+    src: ./roles/setup-server/templates/Cloudflare.conf
+    dest: /etc/systemd/resolved.conf.d/Cloudflare.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Restart systemd-resolved service
+  ansible.builtin.systemd:
+    state: restarted
+    name: systemd-resolved.service
 
 - name: Get Debian/Ubuntu version from server
   command: lsb_release -c

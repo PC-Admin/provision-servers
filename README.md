@@ -18,7 +18,7 @@ I created it as a devops tool to speed up testing.
 Or even easier, provision a server with automatic CloudFlare DNS configuration:
 
 `$ ansible-playbook -v -i inventory/hosts --tags "cloudflare-dns" setup.yml`
-1
+
 
 ## Removing Servers
 
