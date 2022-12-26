@@ -25,7 +25,6 @@
     pkg:
      - git
      - openssl
-     - prometheus-node-exporter
      - unattended-upgrades
      - apt-listchanges
   register: apt_status

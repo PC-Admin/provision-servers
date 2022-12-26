@@ -47,16 +47,7 @@
   with_dict:
     'do_droplet_id': '{{ new_server_info.data.droplet.id }}'
 
-#- name: Ensure SSH config file exists
-#  delegate_to: 127.0.0.1
-#  ansible.builtin.file:
-#    state: touch
-#    path: "/home/{{ lookup('env', 'USER') }}/.ssh/config"
-#    owner: "{{ lookup('env', 'USER') }}"
-#    group: "{{ lookup('env', 'USER') }}"
-#    mode: 0600
-
-- name: Add SSH config entry for every other host
+- name: Add SSH config entry for host
   delegate_to: 127.0.0.1
   ansible.builtin.blockinfile:
     path: "/home/{{ lookup('env', 'USER') }}/.ssh/config"
@@ -69,6 +60,21 @@
           Port 22
           IdentityFile {{ ssh_key_file_private }}
           IdentitiesOnly=yes
+
+- name: Add SSH config entry for host if SSHing by IP is needed
+  delegate_to: 127.0.0.1
+  ansible.builtin.blockinfile:
+    path: "/home/{{ lookup('env', 'USER') }}/.ssh/config"
+    marker_begin: "BEGIN SSH config entry for {{ server_ip_final }}"
+    marker_end: "END SSH config entry for {{ server_ip_final }}"
+    block: |
+      Host {{ server_ip_final }}
+          HostName {{ server_ip_final }}
+          User root
+          Port 22
+          IdentityFile {{ ssh_key_file_private }}
+          IdentitiesOnly=yes
+  when: server_ssh_by_ip | bool
 
 - name: Add HOSTALIASES environment variable to ~/.profile
   delegate_to: 127.0.0.1

@@ -2,3 +2,4 @@
 # Global variables for the playbook
 do_api_token: << DigitalOcean API Token >>
 cloudflare_api_token: << CloudFlare Users Global Token >>
+

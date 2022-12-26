@@ -28,6 +28,7 @@
 # Server Settings
 server_url: pg2.testing.org
 server_subdomains: [ 'matrix' ]
+server_ssh_by_ip: true
 
 # If the server will host the following services
 matrix_service: true
