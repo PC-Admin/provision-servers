@@ -20,6 +20,10 @@
   delay: 6
   retries: 10
 
+- name: Pause for 10 seconds to let APT breathe
+  ansible.builtin.pause:
+    seconds: 10
+
 - name: Install necessary packages on target machine
   apt:
     pkg:

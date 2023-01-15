@@ -31,11 +31,11 @@
     account_api_token: '{{ cloudflare_api_token }}'
     state: present
   with_items: "{{ server_subdomains }}"
-  when: ( server_ipv6 | length > 0 )
+  when: ( server_ipv6 | length > 0 ) and ( server_ipv4 | length == 0 )
   register: record_ipv6
 
 - name: Print the new IPv6 DNS record
   delegate_to: 127.0.0.1
   ansible.builtin.debug:
     msg: Record IPv6 - {{ record_ipv6 }}
-  when: ( server_ipv6 | length > 0 )
+  when: ( server_ipv6 | length > 0 ) and ( server_ipv4 | length == 0 )
