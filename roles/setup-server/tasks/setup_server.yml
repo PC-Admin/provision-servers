@@ -35,6 +35,7 @@
      - openssl
      - unattended-upgrades
      - apt-listchanges
+     - qemu-guest-agent
   register: apt_status
   until: apt_status is success
   delay: 6

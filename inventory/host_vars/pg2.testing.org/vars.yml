@@ -33,7 +33,6 @@ server_ssh_by_ip: true
 # If the server will host the following services
 matrix_service: true
 k8s_service: false
-spawn_on_digitalocean: false
 
 # Proxmox Settings
 spawn_on_proxmox: false
@@ -47,14 +46,16 @@ proxmox_template: "Template Name"
 # DigitalOcean Settings
 spawn_on_digitalocean: true
 do_droplet_region: sgp1
-new_slug_size: s-2vcpu-4gb
+new_slug_size: "s-2vcpu-4gb"
+do_image: "debian-11-x64"
+
+# Server Settings
 swap_size: "4G"
-do_image: debian-11-x64
+ssh_key_file_public: ~/.ssh/somekey_ed25519.pub
+ssh_key_file_private: ~/.ssh/somekey_ed25519
 
 # Cloudflare Settings
 cloudflare_email: michael@perthchat.org
 cloudflare_zone_name: testing.org
 
-# Public SSH Key
-ssh_key_file_public: ~/.ssh/somekey_ed25519.pub
-ssh_key_file_private: ~/.ssh/somekey_ed25519
+# Other Settings

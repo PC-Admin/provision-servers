@@ -41,34 +41,36 @@
 - debug:
     msg: "new_server_info_2: {{ new_server_info_2 }}"
 
-- name: Pause for 20 seconds to let QEMU quest agents startup
-  ansible.builtin.pause:
-    seconds: 20
+- name: Set string fact for checking is QEMU is running yet
+  set_fact:
+    qemu_unloaded_status: "QEMU guest agent is not running"
 
-- name: Probe proxmox host for VMs network details
+- name: Probe proxmox host for VMs network details for up to 180 seconds
   delegate_to: "{{ proxmox_node }}"
   command: |
       sudo qm guest cmd {{ new_server_info.vmid }} network-get-interfaces
-  register: qemu_network_info
+  register: qemu_guest_info
+  until: qemu_guest_info.stderr != qemu_unloaded_status
+  retries: 12
+  delay: 15
+
+- debug:
+    msg: "qemu_guest_info: {{ qemu_guest_info }}"
+
+- debug:
+    msg: "IPv4 Address: {{ qemu_guest_info.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
   ignore_errors: true
 
 - debug:
-    msg: "qemu_network_info: {{ qemu_network_info }}"
-
-- debug:
-    msg: "IPv4 Address: {{ qemu_network_info.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
-  ignore_errors: true
-
-- debug:
-    msg: "IPv6 Address: {{ qemu_network_info.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
+    msg: "IPv6 Address: {{ qemu_guest_info.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
   ignore_errors: true
 
 - name: Assign server IPv4 to a variable
   delegate_to: 127.0.0.1
   set_fact:
-    server_ipv4: "{{ qemu_network_info.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
+    server_ipv4: "{{ qemu_guest_info.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
 
 - name: Assign server IPv6 to a variable
   delegate_to: 127.0.0.1
   set_fact:
-    server_ipv6: "{{ qemu_network_info.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
+    server_ipv6: "{{ qemu_guest_info.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
