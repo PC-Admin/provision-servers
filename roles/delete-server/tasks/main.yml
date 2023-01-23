@@ -1,6 +1,12 @@
 
 # Delete DigitalOcean Server:
-- import_tasks: "{{ role_path }}/tasks/delete_server.yml"
+- import_tasks: "{{ role_path }}/tasks/delete_do_droplet.yml"
+  when: spawn_on_digitalocean | bool
+  tags: always
+
+# Delete Proxmox VM:
+- import_tasks: "{{ role_path }}/tasks/delete_proxmox_vm.yml"
+  when: spawn_on_proxmox | bool
   tags: always
 
 # Delete CloudFlare DNS Record:

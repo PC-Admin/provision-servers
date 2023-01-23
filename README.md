@@ -1,8 +1,20 @@
 # Ansible Provision Servers
 
-This playbook configures 1 to N servers using DigitalOcean, it also adds/removes the DNS records for each server automatically using CloudFlare.
+This playbook configures 1 to N servers using either DigitalOcean or a Proxmox cluster, it also adds/removes the DNS records for each server automatically using CloudFlare.
+
+It also automatically configures ~/.ssh/config and ~/.hosts files to allow for an immediate SSH connection, so you can start working sooner!
 
 I created it as a devops tool to speed up testing.
+
+
+## Prerequisites
+
+Some packages need to be installed on the ansible controller to provision VMs on Proxmox:
+```
+$ pip3 install proxmoxer
+$ pip3 install requests
+$ ansible-galaxy collection install community.general
+```
 
 
 ## Setup Servers

@@ -1,5 +1,9 @@
 ---
 
+- name: Set server hostname to the Server URL
+  ansible.builtin.command: |
+    hostnamectl set-hostname {{ server_url }}
+
 - name: Change server locale
   shell: update-locale LANG="C.UTF-8"
 
@@ -36,7 +40,15 @@
   delay: 6
   retries: 10
 
-- name: Copy file with owner and permissions
+- name: Ensure /etc/systemd/resolved.conf.d/ directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/resolved.conf.d/
+    state: directory
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Permanently set DNS to Cloudflare with a new /etc/systemd/resolved.conf.d/ config file
   ansible.builtin.copy:
     src: ./roles/setup-server/templates/Cloudflare.conf
     dest: /etc/systemd/resolved.conf.d/Cloudflare.conf

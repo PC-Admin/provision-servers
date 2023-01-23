@@ -34,8 +34,17 @@ server_ssh_by_ip: false
 matrix_service: true
 k8s_service: false
 
+# Proxmox Settings
+spawn_on_proxmox: true
+proxmox_host: "10.1.1.50"
+proxmox_node: "proxmox-host"
+proxmox_user: "root@pam"
+proxmox_token_id: "Token_ID"
+proxmox_token_secret: "<< Token Secret >>"
+proxmox_template: "Template Name"
+
 # DigitalOcean Settings
-do_droplet_name: matrix.testing.org
+spawn_on_digitalocean: false
 do_droplet_region: sgp1
 new_slug_size: s-2vcpu-4gb
 swap_size: "4G"
