@@ -19,6 +19,7 @@
     state: stopped
     timeout: 180
   register: old_server_info
+  ignore_errors: true
 
 - debug:
     msg: "{{ old_server_info }}"

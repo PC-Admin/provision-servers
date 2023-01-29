@@ -1,0 +1,13 @@
+---
+
+- name: Remove variable lines from inventory files
+  delegate_to: 127.0.0.1
+  lineinfile:
+    path: './inventory/host_vars/{{ server_url }}/vars.yml'
+    regexp: "^#?{{ item }}:.*$"
+    mode: '0600'
+    state: absent
+  with_items:
+    - 'server_ipv6'
+    - 'server_ipv4'
+    - 'vmid'

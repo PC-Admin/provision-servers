@@ -78,6 +78,10 @@
     pkg:
      - ansible
   when: ( focal_string in debian_ubuntu_version.stdout ) or ( jammy_string in debian_ubuntu_version.stdout ) or ( bullseye_string in debian_ubuntu_version.stdout )
+  register: apt_status
+  until: apt_status is success
+  delay: 6
+  retries: 10
 
 - name: Add buster-backports repository into sources list for Debian 10
   apt_repository:
@@ -91,6 +95,10 @@
      - ansible
     default_release: buster-backports
   when: buster_string in debian_ubuntu_version.stdout
+  register: apt_status
+  until: apt_status is success
+  delay: 6
+  retries: 10
 
 - name: Configure unattended-upgrades (1/3)
   lineinfile:

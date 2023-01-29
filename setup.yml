@@ -1,5 +1,5 @@
 
-- name: "Creates digitalocean droplet and space, performs initial setup, adds relevant playbooks to users account."
+- name: "Creates Digitalocean droplet or Proxmox kvm, performs initial setup of server."
   hosts: testing_servers
   gather_facts: false
 

@@ -1,17 +1,6 @@
 
 # Append to server_vars.yml variable file (updatable)
 
-- name: Add vmid line to inventory file
-  delegate_to: 127.0.0.1
-  lineinfile:
-    path: './inventory/host_vars/{{ server_url }}/vars.yml'
-    regexp: "^#? *{{ item.key | regex_escape() }}:"
-    line: "{{ item.key }}: {{ item.value }}"
-    mode: '0600'
-    state: present
-  with_dict:
-    'vmid': '"{{ new_server_info.vmid }}"'
-  when: ( new_server_info.vmid | string | length > 0 ) and ( new_server_info.vmid is defined )
 
 - name: Add server_ipv4 line to inventory file
   delegate_to: 127.0.0.1
