@@ -1,5 +1,11 @@
 
-# Global variables for the playbook
+# DigitalOcean API Token (optional)
 do_api_token: << DigitalOcean API Token >>
+
+# Cloudflare API Token (optional)
 cloudflare_api_token: << CloudFlare Users Global Token >>
 
+# Proxmox API User/Token (optional)
+proxmox_user: "root@pam"
+proxmox_token_id: "Token_ID"
+proxmox_token_secret: "<< Token Secret >>"

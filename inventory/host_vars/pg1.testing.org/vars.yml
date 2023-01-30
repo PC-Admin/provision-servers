@@ -38,10 +38,8 @@ k8s_service: false
 spawn_on_proxmox: false
 proxmox_host: "10.1.1.50"
 proxmox_node: "proxmox-host"
-proxmox_user: "root@pam"
-proxmox_token_id: "Token_ID"
-proxmox_token_secret: "<< Token Secret >>"
 proxmox_template: "Template Name"
+proxmox_storage: "Storage Name"
 
 # DigitalOcean Settings
 spawn_on_digitalocean: true

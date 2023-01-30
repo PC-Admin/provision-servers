@@ -10,6 +10,7 @@
     name: "{{ item }}"
     node: "{{ proxmox_node }}"
     clone: "{{ proxmox_template }}"
+    storage: "{{ proxmox_storage }}"
     full: true
     #net: 'model={{ mac_address.stdout }},bridge="vmbr0"' # doesn't work?
     #ipconfig: 'ip={{ ip_address.stdout }}/16>' # doesn't work?
@@ -134,7 +135,7 @@
   delegate_to: 127.0.0.1
   lineinfile:
     path: './inventory/host_vars/{{ item.0 }}/vars.yml'
-    regexp: "^#?vimid:.*$"
+    regexp: "^#?vmid:.*$"
     line: "vmid: {{ item.1.vmid }}"
     mode: '0600'
     state: present
