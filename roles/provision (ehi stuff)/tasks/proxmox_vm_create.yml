@@ -1,0 +1,245 @@
+---
+
+- name: "Create a full clone of the template for each host (sequentially)"
+  delegate_to: localhost
+  community.general.proxmox_kvm:
+    api_host: "{{ hostvars[item].proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    name: "{{ ( hostvars[item].inventory_hostname | split('.') )[0] }}"
+    node: "{{ hostvars[item].proxmox_node }}"
+    clone: "{{ hostvars[item].proxmox_template }}"
+    storage: "{{ hostvars[item].proxmox_storage }}"
+    full: true
+    state: present
+    timeout: 300
+  register: new_server_info_vm
+  loop: "{{ ansible_play_hosts }}"
+  when: proxmox_method == "clone"
+  loop_control:
+    pause: 1
+  run_once: true
+
+- name: "Print each entry from new_server_info_vm.results"
+  debug:
+    msg: "{{ item }}"
+  with_items: "{{ new_server_info_vm.results }}"
+  when: ( new_server_info_vm is defined ) and ( proxmox_method == "clone" )
+  run_once: true
+
+#- name: "Print the vmid of each entry from new_server_info_vm.results"
+#  debug:
+#    msg:
+#      hostname: "{{ item.item }}"
+#      node: "{{ item.invocation.module_args.node }}"
+#      vmid: "{{ item.vmid }}"
+#  with_items: "{{ new_server_info_vm.results }}"
+#  when: ( new_server_info_vm is defined ) and ( proxmox_method == "clone" )
+#  run_once: true
+#  ignore_errors: true
+
+- name: "Create LXC containers for each host (sequentially)"
+  delegate_to: localhost
+  community.general.proxmox:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    node: "{{ proxmox_node }}"
+    ostemplate: "{{ proxmox_lxc_template }}"
+    storage: "{{ proxmox_storage }}"
+    cpus: "{{ proxmox_lxc_cpus }}"
+    memory: "{{ proxmox_lxc_memory }}"
+    swap: "{{ proxmox_lxc_swap }}"
+    hostname: "{{ item }}"
+    password: "{{ proxmox_lxc_password }}"
+    #sshkeys: "{{ public_ssh_key }}"
+    unprivileged: "{{ proxmox_lxc_unprivileged | default(omit) }}"
+    state: present
+    timeout: 300
+    netif: '{"net0":"name=eth0,bridge=vmbr0,ip=dhcp,ip6=dhcp,type=veth"}'
+  register: new_server_info_lxc
+  with_items: "{{ ansible_play_hosts }}"
+  when: proxmox_method == "lxc"
+  run_once: true
+
+- name: "Print each entry from new_server_info_lxc.results"
+  debug:
+    msg: "{{ item }}"
+  with_items: "{{ new_server_info_lxc.results }}"
+  when: ( new_server_info_lxc is defined ) and ( proxmox_method == "lxc" )
+  run_once: true
+
+- name: "Print the vmid of each entry from new_server_info_lxc.results"
+  debug:
+    msg: "{{ item.vmid }}"
+  with_items: "{{ new_server_info_lxc.results }}"
+  when: ( new_server_info_lxc is defined ) and ( proxmox_method == "lxc" )
+  run_once: true
+  ignore_errors: true
+
+- name: Start the new VMs (sequentially)
+  delegate_to: localhost
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    vmid: "{{ item.vmid }}"
+    node: "{{ proxmox_node }}"
+    state: started
+  register: new_server_info_vm2
+  with_items: "{{ new_server_info_vm.results }}"
+  when: proxmox_method == "clone"
+  run_once: true
+
+- name: Print stdout of new_server_info_vm2.results
+  debug:
+    msg: "new_server_info_vm2: {{ item }}"
+  with_items: "{{ new_server_info_vm2.results }}"
+  when: proxmox_method == "clone"
+  run_once: true
+
+- name: Print stdout of new_server_info_vm2.results
+  debug:
+    msg: "VMID: {{ item.vmid }}, Node: {{ item.invocation.module_args.node }}, Status: {{ item.status }}"
+  with_items: "{{ new_server_info_vm2.results }}"
+  when: proxmox_method == "clone"
+  run_once: true
+
+- name: "Start LXC containers for each host (sequentially)"
+  delegate_to: localhost
+  community.general.proxmox:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    node: "{{ proxmox_node }}"
+    hostname: "{{ item }}"
+    state: started
+  register: new_server_info_lxc2
+  loop: "{{ ansible_play_hosts }}"
+  when: proxmox_method == "lxc"
+  run_once: true
+
+- name: Print stdout of new_server_info_lxc2.results
+  debug:
+    msg: "new_server_info_lxc2: {{ item }}"
+  with_items: "{{ new_server_info_lxc2.results }}"
+  when: proxmox_method == "lxc"
+  run_once: true
+
+- name: Set string fact for checking is QEMU is running yet
+  set_fact:
+    qemu_unloaded_status: "QEMU guest agent is not running"
+
+# VMs return results before a new IP is even issues :O this code doesn't work!
+
+- name: Probe proxmox host for VMs network details for up to 180 seconds
+  delegate_to: "{{ item.invocation.module_args.node }}"
+  command: |
+      sudo qm guest cmd {{ item.vmid }} network-get-interfaces
+  when: proxmox_method == "clone"
+  with_items: "{{ new_server_info_vm.results }}"
+  until: qemu_guest_info.stderr != qemu_unloaded_status
+  loop_control:
+    pause: 1
+  register: qemu_guest_info
+  run_once: true
+
+
+#- name: qemu_guest_info.results
+#  debug:
+#    msg: "{{ qemu_guest_info.results }}"
+#  run_once: true
+
+#- name: "Print the stdout of each entry from qemu_guest_info.results"
+#  debug:
+#    msg: "{{ item.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
+#  with_items: "{{ qemu_guest_info.results }}"
+#  run_once: true
+
+#- name: "Print the stdout of each entry from qemu_guest_info.results"
+#  debug:
+#    msg: "{{ item.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
+#  with_items: "{{ qemu_guest_info.results }}"
+#  run_once: true
+
+# https://stackoverflow.com/questions/46411107/iterating-over-two-lists-in-ansible
+
+#- name: "Print the ansible hostname as well as the server_ipv4 variable"
+#  debug:
+#    msg: "{{ item.0 }} - {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
+#  loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
+#  run_once: true
+
+- name: "Write IPv4 to each hosts inventory file"
+  delegate_to: localhost
+  ansible.builtin.lineinfile:
+    path: './inventory/host_vars/{{ item.0 }}/vars.yml'
+    regexp: "^#?server_ipv4:.*$"
+    line: "server_ipv4: {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
+    mode: '0600'
+    state: present
+  when: "{{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') | length > 0 }}"
+  loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
+  run_once: true
+
+- name: "Write IPv6 to each hosts inventory file"
+  delegate_to: localhost
+  ansible.builtin.lineinfile:
+    path: './inventory/host_vars/{{ item.0 }}/vars.yml'
+    regexp: "^#?server_ipv6:.*$"
+    line: "server_ipv6: {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
+    mode: '0600'
+    state: present
+  when: "{{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') | length > 0 }}"
+  loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
+  run_once: true
+
+#- name: Print vmid lines
+#  debug:
+#    msg: "{{ item.vmid }}"
+#  with_items: "{{ new_server_info.results }}"
+#  run_once: true
+
+- name: Extract VM IDs from new_server_info_2
+  set_fact:
+    vm_ids: "{{ new_server_info_2.results | map(attribute='msg') | map('regex_replace', 'VM ([0-9]+) is already running', '\\1') | list }}"
+  when: proxmox_method == "lxc"
+  run_once: true
+
+- name: Display VM IDs
+  debug:
+    var: vm_ids
+  when: proxmox_method == "lxc"
+  run_once: true
+
+- name: Add vmid line to each hosts inventory file
+  delegate_to: localhost
+  lineinfile:
+    path: './inventory/host_vars/{{ item.0 }}/vars.yml'
+    regexp: "^#?vmid:.*$"
+    line: "vmid: {{ item.1.vmid | regex_replace('^VM (\\d+) started$', '\\1') }}"
+    mode: '0600'
+    state: present
+  when: ( proxmox_method == "clone" ) and ( item.1.vmid is defined ) and ( item.1.vmid | string | length > 0 ) 
+  loop: "{{ ansible_play_hosts | zip(new_server_info_vm.results) | list }}"
+  run_once: true
+
+- name: Add vmid line to each hosts inventory file
+  delegate_to: localhost
+  lineinfile:
+    path: './inventory/host_vars/{{ item.0 }}/vars.yml'
+    regexp: "^#?vmid:.*$"
+    line: "vmid: {{ item.1 }}"
+    mode: '0600'
+    state: present
+  when: proxmox_method == "lxc"
+  loop: "{{ ansible_play_hosts | zip(vm_ids) | list }}"
+  run_once: true
+
+- name: "Load new variables from the inventory file of each host"
+  include_vars:
+    file: './inventory/host_vars/{{ inventory_hostname }}/vars.yml'

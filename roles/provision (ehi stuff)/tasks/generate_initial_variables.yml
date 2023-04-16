@@ -1,0 +1,47 @@
+---
+
+- name: Gather facts about the controller system
+  ansible.builtin.setup:
+  delegate_to: localhost
+  run_once: true
+
+- name: Add SSH config entry for host
+  delegate_to: localhost
+  ansible.builtin.blockinfile:
+    path: "/home/{{ lookup('env', 'USER') }}/.ssh/config"
+    marker_begin: "BEGIN SSH config entry for {{ rke2_subdomain }}.{{ awx_domain.split('.')[1:] | join('.') }}"
+    marker_end: "END SSH config entry for {{ rke2_subdomain }}.{{ awx_domain.split('.')[1:] | join('.') }}"
+    block: |
+      Host {{ rke2_subdomain }}.{{ awx_domain.split('.')[1:] | join('.') }}
+          HostName {{ server_ip_final }}
+          User root
+          Port 22
+          IdentityFile {{ ssh_key_file_private }}
+          IdentitiesOnly=yes
+  when: ansible_system == 'Linux'
+
+- name: Add HOSTALIASES environment variable to ~/.profile
+  delegate_to: localhost
+  lineinfile:
+    path: '~/.profile'
+    create: true
+    line: "HOSTALIASES ~/.hosts"
+    mode: '0600'
+    state: present
+  when: ansible_system == 'Linux'
+  run_once: true
+
+- name: Add host entry to ~/.hosts file
+  delegate_to: localhost
+  lineinfile:
+    path: '~/.hosts'
+    create: true
+    regexp: "^.*{{ rke2_subdomain }}.{{ awx_domain.split('.')[1:] | join('.') }}$"
+    line: "{{ server_ipv4 }} {{ rke2_subdomain }}.{{ awx_domain.split('.')[1:] | join('.') }}"
+    mode: '0600'
+    state: present
+  when: ansible_system == 'Linux'
+
+- name: "Pause for 3 minutes to let VMs fire up and CloudFlare DNS propagate [Coffee break!]"
+  ansible.builtin.pause:
+    seconds: 180

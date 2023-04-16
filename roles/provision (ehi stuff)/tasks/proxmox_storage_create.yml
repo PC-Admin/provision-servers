@@ -1,0 +1,37 @@
+---
+
+- name: Create a dynamic group for worker nodes
+  group_by:
+    key: "worker_{{ 'yes' if (hostvars[inventory_hostname]['rke2_type'] is defined and hostvars[inventory_hostname]['rke2_type'] == 'agent') else 'no' }}"
+
+- name: Create list of worker nodes
+  set_fact:
+    worker_nodes: "{{ groups['worker_yes'] if 'worker_yes' in groups else [] }}"
+  run_once: True
+
+- name: Print the number of worker nodes
+  debug:
+    msg: "Number of worker nodes: {{ worker_nodes | length }}"
+  run_once: True
+
+- name: Create new disks for each agent node in Proxmox (do not rewrite in case it exists already)
+  delegate_to: localhost
+  community.general.proxmox_disk:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    name: "{{ ( inventory_hostname | split('.') )[0] }}"
+    disk: "virtio{{ item }}"
+    backup: false
+    cache: none
+    storage: "{{ proxmox_storage }}"
+    size: "{{ volume_size }}"
+    state: present
+  when: ( rke2_type == "agent" ) or ( worker_nodes | length == 0 )
+  with_sequence: start=1 end={{ number_of_volumes }}
+  register: new_volumes
+
+#- name: DEBUG print new volumes
+#  debug:
+#    msg: "{{ new_volumes }}"

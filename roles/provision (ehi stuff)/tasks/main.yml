@@ -1,0 +1,31 @@
+
+# Creates Proxmox VMs
+- import_tasks: "{{ role_path }}/tasks/proxmox_vm_create.yml"
+  tags: [ 'never', 'provision' ]
+
+# Create block storage for Proxmox VMs
+- import_tasks: "{{ role_path }}/tasks/proxmox_storage_create.yml"
+  tags: [ 'never', 'provision' ]
+
+# Delete Proxmox VMs and Block Storage
+- import_tasks: "{{ role_path }}/tasks/proxmox_vm_delete.yml"
+  tags: [ 'never', 'teardown' ]
+
+# Save the Servers IP address
+- import_tasks: "{{ role_path }}/tasks/save_server_ips.yml"
+  tags: [ 'never', 'provision' ]
+
+# Creates a Cloudflare DNS entry
+- import_tasks: "{{ role_path }}/tasks/cloudflare_dns_create.yml"
+  tags: [ 'never', 'provision' ]
+
+# Deletes a Cloudflare DNS entry
+- import_tasks: "{{ role_path }}/tasks/cloudflare_dns_delete.yml"
+  tags: [ 'never', 'teardown' ]
+
+# Generates initial variables and sets up SSH access
+- import_tasks: "{{ role_path }}/tasks/generate_initial_variables.yml"
+  tags: [ 'never', 'provision' ]
+
+- import_tasks: "{{ role_path }}/tasks/ssh_cleanup.yml"
+  tags: [ 'never', 'teardown' ]

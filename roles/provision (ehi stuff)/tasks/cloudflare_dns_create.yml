@@ -1,0 +1,69 @@
+---
+
+- name: Create A records that points to the servers IP
+  delegate_to: localhost
+  community.general.cloudflare_dns:
+    zone: "{{ awx_domain.split('.')[1:] | join('.') }}"
+    record: '{{ item }}'
+    type: A
+    value: '{{ server_ipv4 }}'
+    account_email: '{{ cloudflare_email }}'
+    account_api_token: '{{ cloudflare_api_token }}'
+    state: present
+  with_items: "{{ rke2_subdomain }}"
+  when: ( server_ipv4 | length > 0 )
+  register: record_ipv4
+  ignore_errors: true
+
+- name: Print the new IPv4 DNS record
+  delegate_to: localhost
+  ansible.builtin.debug:
+    msg: Record IPv4 - {{ record_ipv4 }}
+  when: ( server_ipv4 | length > 0 )
+
+- name: Create an A record for the Load Balancer
+  delegate_to: localhost
+  community.general.cloudflare_dns:
+    zone: "{{ awx_domain.split('.')[1:] | join('.') }}"
+    record: "{{ rke2_load_balancer | regex_replace('(\\.)(.*)$', '') }}"
+    type: A
+    value: '{{ load_balancer_ip_internal }}'
+    account_email: '{{ cloudflare_email }}'
+    account_api_token: '{{ cloudflare_api_token }}'
+    state: present
+  when: ( load_balancer_ip_internal | length > 0 )
+  register: lb_record_ipv4
+  run_once: True
+
+- name: Print the new Load Balancer IPv4 DNS record
+  delegate_to: localhost
+  ansible.builtin.debug:
+    msg: Load Balancer Record IPv4 - {{ lb_record_ipv4 }}
+  when: ( load_balancer_ip_external | length > 0 )
+  run_once: True
+
+- name: Create an A record for Rancher
+  delegate_to: localhost
+  community.general.cloudflare_dns:
+    zone: "{{ awx_domain.split('.')[1:] | join('.') }}"
+    record: "rancher"
+    type: A
+    value: '{{ load_balancer_ip_external }}'
+    account_email: '{{ cloudflare_email }}'
+    account_api_token: '{{ cloudflare_api_token }}'
+    state: present
+  when: ( load_balancer_ip_external | length > 0 )
+  run_once: True
+
+- name: Create an A record for AWX
+  delegate_to: localhost
+  community.general.cloudflare_dns:
+    zone: "{{ awx_domain.split('.')[1:] | join('.') }}"
+    record: "{{ awx_domain.split('.')[0] }}"
+    type: A
+    value: '{{ load_balancer_ip_external }}'
+    account_email: '{{ cloudflare_email }}'
+    account_api_token: '{{ cloudflare_api_token }}'
+    state: present
+  when: ( load_balancer_ip_external | length > 0 )
+  run_once: True

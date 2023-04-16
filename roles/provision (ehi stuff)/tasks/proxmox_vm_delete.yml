@@ -1,0 +1,132 @@
+---
+
+- name: Immediately shutdown the VM
+  community.general.shutdown:
+    delay: 0
+  async: 1
+  poll: 0
+  ignore_unreachable: true
+  ignore_errors: true
+  environment:
+    ANSIBLE_SSH_RETRIES: 0
+
+- name: Stop the proxmox VMs
+  delegate_to: localhost
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    name: "{{ inventory_hostname }}"
+    node: "{{ proxmox_node }}"
+    force: true
+    state: stopped
+    timeout: 180
+  when: proxmox_method == "clone"
+  register: old_server_info
+  ignore_errors: true
+
+- name: Stop the proxmox LXC containers
+  delegate_to: localhost
+  community.general.proxmox:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    hostname: "{{ inventory_hostname }}"
+    vmid: "{{ vmid | int }}"
+    node: "{{ proxmox_node }}"
+    force: true
+    state: stopped
+    timeout: 180
+  when: proxmox_method == "lxc"
+  register: old_server_info
+  ignore_errors: true
+
+- debug:
+    msg: "{{ old_server_info }}"
+
+- name: Set string fact for VM stopped status
+  set_fact:
+    stopped_status: "status: stopped"
+
+- name: DEBUG print vmid
+  debug:
+    msg: "vmid: {{ vmid }}"
+
+- name: Check if target VM is stopped for up to 60 seconds
+  delegate_to: "{{ proxmox_node }}"
+  command: "sudo qm status {{ vmid }}"
+  when: proxmox_method == "clone"
+  register: vm_status
+  until: vm_status.stdout == stopped_status
+  ignore_unreachable: true
+  ignore_errors: true
+  retries: 6
+  delay: 10
+
+- name: Check if target LXC container is stopped for up to 60 seconds
+  delegate_to: "{{ proxmox_node }}"
+  command: "sudo pct status {{ vmid }}"
+  when: proxmox_method == "lxc"
+  register: ct_status
+  until: stopped_status in ct_status.stdout
+  ignore_unreachable: true
+  ignore_errors: true
+  retries: 6
+  delay: 10
+
+- name: Delete the extra disks on agent nodes in Proxmox
+  delegate_to: localhost
+  community.general.proxmox_disk:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    name: "{{ inventory_hostname }}"
+    disk: "virtio{{ item }}"
+    backup: false
+    cache: none
+    storage: "{{ proxmox_storage }}"
+    size: "{{ volume_size }}"
+    state: absent
+  when: rke2_type == "agent"
+  with_sequence: start=1 end={{ number_of_volumes }}
+  register: new_volumes
+  ignore_errors: true
+
+- name: "Delete the proxmox VMs (sequentially)"
+  delegate_to: localhost
+  community.general.proxmox_kvm:
+    api_host: "{{ hostvars[item].proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    name: "{{ hostvars[item].inventory_hostname }}"
+    node: "{{ hostvars[item].proxmox_node }}"
+    full: true
+    state: absent
+    timeout: 180
+  register: old_server_info_2
+  loop: "{{ ansible_play_hosts }}"
+  when: proxmox_method == "clone"
+  loop_control:
+    pause: 1
+  run_once: true
+
+- name: Delete the proxmox LXC containers
+  delegate_to: localhost
+  community.general.proxmox:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    vmid: "{{ vmid }}"
+    node: "{{ proxmox_node }}"
+    state: absent
+  when: proxmox_method == "lxc"
+  register: delete_container_result
+  ignore_errors: true
+
+#- debug:
+#    msg: "{{ old_server_info_2 }}"

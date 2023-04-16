@@ -1,0 +1,35 @@
+---
+
+- name: Gather facts on the ansible controller
+  delegate_to: localhost
+  ansible.builtin.setup:
+  run_once: true
+
+- name: Delete ~/.ssh/known_hosts entry for host
+  delegate_to: localhost
+  ansible.builtin.command: |
+    ssh-keygen -f "/home/{{ lookup('env', 'USER') }}/.ssh/known_hosts" -R "{{ server_ipv4 }}"
+  when: ansible_system == 'Linux'
+  ignore_errors: True
+
+- name: Remove host entry to ~/.hosts file
+  delegate_to: localhost
+  lineinfile:
+    path: '~/.hosts'
+    create: true
+    regexp: "^.*{{ rke2_subdomain }}.{{ awx_domain.split('.')[1:] | join('.') }}$"
+    line: "{{ server_ipv4 }} {{ rke2_subdomain }}.{{ awx_domain.split('.')[1:] | join('.') }}"
+    mode: '0600'
+    state: absent
+  when: ansible_system == 'Linux'
+
+- name: Remove HOSTALIASES environment variable to ~/.profile
+  delegate_to: localhost
+  lineinfile:
+    path: '~/.profile'
+    create: true
+    line: "HOSTALIASES ~/.hosts"
+    mode: '0600'
+    state: absent
+  when: ansible_system == 'Linux'
+  run_once: true

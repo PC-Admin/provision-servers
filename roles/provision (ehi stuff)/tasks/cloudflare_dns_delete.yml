@@ -1,0 +1,53 @@
+---
+
+- name: Remove A records that points to the servers IP
+  delegate_to: localhost
+  community.general.cloudflare_dns:
+    zone: "{{ awx_domain.split('.')[1:] | join('.') }}"
+    record: '{{ item }}'
+    type: A
+    account_email: '{{ cloudflare_email }}'
+    account_api_token: '{{ cloudflare_api_token }}'
+    state: absent
+    #proxy: false
+  with_items: "{{ rke2_subdomain }}"
+  ignore_errors: true
+  register: record_ipv4
+
+- name: Remove A record that points to the Load Balancer
+  delegate_to: localhost
+  community.general.cloudflare_dns:
+    zone: "{{ awx_domain.split('.')[1:] | join('.') }}"
+    record: "{{ rke2_load_balancer | regex_replace('(\\.)(.*)$', '') }}"
+    type: A
+    account_email: '{{ cloudflare_email }}'
+    account_api_token: '{{ cloudflare_api_token }}'
+    state: absent
+  when: ( load_balancer_ip_external | length > 0 )
+  run_once: True
+  ignore_errors: true
+
+- name: Remove A record for Rancher
+  delegate_to: localhost
+  community.general.cloudflare_dns:
+    zone: "{{ awx_domain.split('.')[1:] | join('.') }}"
+    record: "rancher"
+    type: A
+    account_email: '{{ cloudflare_email }}'
+    account_api_token: '{{ cloudflare_api_token }}'
+    state: absent
+  when: ( load_balancer_ip_external | length > 0 )
+  run_once: True
+  ignore_errors: true
+
+- name: Remove A record for AWX
+  delegate_to: localhost
+  community.general.cloudflare_dns:
+    zone: "{{ awx_domain.split('.')[1:] | join('.') }}"
+    record: "{{ awx_domain.split('.')[0] }}"
+    type: A
+    account_email: '{{ cloudflare_email }}'
+    account_api_token: '{{ cloudflare_api_token }}'
+    state: absent
+  when: ( load_balancer_ip_external | length > 0 )
+  run_once: True
