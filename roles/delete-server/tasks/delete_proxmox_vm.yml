@@ -1,5 +1,10 @@
 ---
 
+- name: Ignore host key for automatically generated hosts
+  #delegate_to: 127.0.0.1
+  set_fact:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+
 - name: Immediately shutdown the VM
   community.general.shutdown:
     delay: 0
