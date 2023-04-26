@@ -198,6 +198,7 @@
   loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
   run_once: true
 
+
 #- name: Print vmid lines
 #  debug:
 #    msg: "{{ item.vmid }}"

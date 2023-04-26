@@ -98,7 +98,7 @@
   when: has_entry_in_known_hosts_file.rc == 1
 
 - name: Wait for SSH connection to become available, with 5 seconds between checks, for up to 2 minutes
-  delegate_to: "{{ server_url }}"
+  #delegate_to: "{{ server_url }}"
   wait_for_connection:
     sleep: 5
     timeout: 120

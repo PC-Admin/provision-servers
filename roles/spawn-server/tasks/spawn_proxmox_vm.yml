@@ -1,42 +1,45 @@
 ---
 
 - name: "Create a full clone of the template for each host (sequentially)"
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
   community.general.proxmox_kvm:
-    api_host: "{{ proxmox_host }}"
+    api_host: "{{ hostvars[item].proxmox_host }}"
     api_user: "{{ proxmox_user }}"
     api_token_id: "{{ proxmox_token_id }}"
     api_token_secret: "{{ proxmox_token_secret }}"
-    name: "{{ item }}"
-    node: "{{ proxmox_node }}"
-    clone: "{{ proxmox_template }}"
-    storage: "{{ proxmox_storage }}"
+    name: "{{ hostvars[item].inventory_hostname }}"
+    node: "{{ hostvars[item].proxmox_node }}"
+    clone: "{{ hostvars[item].proxmox_template }}"
+    storage: "{{ hostvars[item].proxmox_storage }}"
     full: true
-    #net: 'model={{ mac_address.stdout }},bridge="vmbr0"' # doesn't work?
-    #ipconfig: 'ip={{ ip_address.stdout }}/16>' # doesn't work?
-    #vcpus: 1
-    #cores: "{{ proxmox_kvm_cores }} "# doesn't work?
-    #memory: "{{ proxmox_kvm_memory }} "# doesn't work?
     state: present
     timeout: 300
-  register: new_server_info
-  with_items: "{{ ansible_play_hosts }}"
+  register: new_server_info_vm
+  loop: "{{ ansible_play_hosts }}"
+  loop_control:
+    pause: 1
   run_once: true
 
-#- name: "Print each entry from new_server_info.results"
-#  debug:
-#    msg: "{{ item }}"
-#  with_items: "{{ new_server_info.results }}"
-#  run_once: true
+- name: "Print each entry from new_server_info_vm.results"
+  debug:
+    msg: "{{ item }}"
+  with_items: "{{ new_server_info_vm.results }}"
+  when: new_server_info_vm is defined
+  run_once: true
 
-#- name: "Print the vmid of each entry from new_server_info.results"
+#- name: "Print the vmid of each entry from new_server_info_vm.results"
 #  debug:
-#    msg: "{{ item.vmid }}"
-#  with_items: "{{ new_server_info.results }}"
+#    msg:
+#      hostname: "{{ item.item }}"
+#      node: "{{ item.invocation.module_args.node }}"
+#      vmid: "{{ item.vmid }}"
+#  with_items: "{{ new_server_info_vm.results }}"
+#  when: ( new_server_info_vm is defined ) and ( proxmox_method == "clone" )
 #  run_once: true
+#  ignore_errors: true
 
 - name: Start the new VMs (sequentially)
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
   community.general.proxmox_kvm:
     api_host: "{{ proxmox_host }}"
     api_user: "{{ proxmox_user }}"
@@ -44,34 +47,49 @@
     api_token_secret: "{{ proxmox_token_secret }}"
     vmid: "{{ item.vmid }}"
     node: "{{ proxmox_node }}"
-    #vcpus: 1
-    #cores: "{{ proxmox_kvm_cores }}"
-    #memory: "{{ proxmox_kvm_memory }}"
     state: started
-  register: new_server_info_2
-  with_items: "{{ new_server_info.results }}"
+  register: new_server_info_vm2
+  with_items: "{{ new_server_info_vm.results }}"
   run_once: true
 
-#- name: Print stdout of new_server_info_2.results
-#  debug:
-#    msg: "new_server_info_2: {{ item }}"
-#  with_items: "{{ new_server_info_2.results }}"
-#  run_once: true
+- name: Print stdout of new_server_info_vm2.results
+  debug:
+    msg: "new_server_info_vm2: {{ item }}"
+  with_items: "{{ new_server_info_vm2.results }}"
+  run_once: true
+
+- name: Print stdout of new_server_info_vm2.results
+  debug:
+    msg: "VMID: {{ item.vmid }}, Node: {{ item.item.invocation.module_args.node }}, Status: {{ item.status }}"
+  with_items: "{{ new_server_info_vm2.results }}"
+  run_once: true
+
+# - name: Probe proxmox host for VMs network details for up to 180 seconds
+#   delegate_to: "{{ proxmox_node }}"
+#   command: |
+#       sudo qm guest cmd {{ item }} network-get-interfaces
+#   register: qemu_guest_info
+#   until: qemu_guest_info.stderr != qemu_unloaded_status
+#   retries: 12
+#   delay: 15
+#   with_items: "{{ new_server_info.results | json_query('[*].vmid') | list }}"
+#   run_once: true
 
 - name: Set string fact for checking is QEMU is running yet
   set_fact:
     qemu_unloaded_status: "QEMU guest agent is not running"
 
 - name: Probe proxmox host for VMs network details for up to 180 seconds
-  delegate_to: "{{ proxmox_node }}"
+  delegate_to: "{{ item.item.invocation.module_args.node }}"
   command: |
-      sudo qm guest cmd {{ item }} network-get-interfaces
-  register: qemu_guest_info
+      sudo qm guest cmd {{ item.vmid }} network-get-interfaces
+  with_items: "{{ new_server_info_vm2.results }}"
   until: qemu_guest_info.stderr != qemu_unloaded_status
-  retries: 12
-  delay: 15
-  with_items: "{{ new_server_info.results | json_query('[*].vmid') | list }}"
+  loop_control:
+    pause: 1
+  register: qemu_guest_info
   run_once: true
+  ignore_errors: true
 
 #- name: qemu_guest_info
 #  debug:
@@ -109,7 +127,7 @@
     line: "server_ipv4: {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
     mode: '0600'
     state: present
-  when: "{{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') | length > 0 }}"
+  when: "{{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') | length > 0 }}"
   loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
   run_once: true
 
@@ -132,15 +150,15 @@
 #  run_once: true
 
 - name: Add vmid line to each hosts inventory file
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
   lineinfile:
     path: './inventory/host_vars/{{ item.0 }}/vars.yml'
     regexp: "^#?vmid:.*$"
-    line: "vmid: {{ item.1.vmid }}"
+    line: "vmid: {{ item.1.vmid | regex_replace('^VM (\\d+) started$', '\\1') }}"
     mode: '0600'
     state: present
-  when: ( item.1.vmid | string | length > 0 ) and ( item.1.vmid is defined )
-  loop: "{{ ansible_play_hosts | zip(new_server_info.results) | list }}"
+  when: ( item.1.vmid is defined ) and ( item.1.vmid | string | length > 0 ) 
+  loop: "{{ ansible_play_hosts | zip(new_server_info_vm.results) | list }}"
   run_once: true
 
 - name: "Load new variables from the inventory file of each host"
