@@ -13,7 +13,7 @@
     - Your server has been created! You now need to configure your DNS to have the 
     - "following records:"
     - Type    Host                    Priority  Weight  Port   Target
-    - A       matrix                  -         -       -      {{ server_ipv4 }}
+    - A       matrix                  -         -       -      {{ server_ipv4_final }}
   when: ( server_ipv4 | length > 0 ) and ( server_ipv6 | length == 0 )
 
 - debug:
@@ -21,6 +21,6 @@
     - Your server has been created! You now need to configure your DNS to have the 
     - "following records:"
     - Type    Host                    Priority  Weight  Port   Target
-    - A       matrix                  -         -       -      {{ server_ipv4 }}
+    - A       matrix                  -         -       -      {{ server_ipv4_final }}
     - AAAA    matrix                  -         -       -      {{ server_ipv6 }}
   when: ( server_ipv4 | length > 0 ) and ( server_ipv6 | length > 0 )

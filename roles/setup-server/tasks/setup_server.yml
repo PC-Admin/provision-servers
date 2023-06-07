@@ -61,23 +61,13 @@
   ansible.builtin.systemd:
     state: restarted
     name: systemd-resolved.service
-
-- name: Get Debian/Ubuntu version from server
-  command: lsb_release -c
-  register: debian_ubuntu_version
-
-- name: Set strings for release names
-  set_fact:
-    focal_string: "focal"
-    jammy_string: "jammy"
-    buster_string: "buster"
-    bullseye_string: "bullseye"
+  ignore_errors: true
 
 - name: Add ansible package for Ubuntu 20.04 or Ubuntu 22.04 or Debian 11
   apt:
     pkg:
      - ansible
-  when: ( focal_string in debian_ubuntu_version.stdout ) or ( jammy_string in debian_ubuntu_version.stdout ) or ( bullseye_string in debian_ubuntu_version.stdout )
+  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' or ansible_facts['distribution_release'] == 'bullseye' )
   register: apt_status
   until: apt_status is success
   delay: 6
@@ -87,14 +77,14 @@
   apt_repository:
     repo: deb http://deb.debian.org/debian buster-backports main
     state: present
-  when: buster_string in debian_ubuntu_version.stdout
+  when: ( ansible_facts['distribution_release'] == 'buster' )
 
 - name: Add ansible package from backports for Debian 10
   apt:
     pkg:
      - ansible
     default_release: buster-backports
-  when: buster_string in debian_ubuntu_version.stdout
+  when: ( ansible_facts['distribution_release'] == 'buster' )
   register: apt_status
   until: apt_status is success
   delay: 6
@@ -108,7 +98,7 @@
     owner: root
     group: root
     mode: '0644'
-  when: ( buster_string in debian_ubuntu_version.stdout ) or ( bullseye_string in debian_ubuntu_version.stdout )
+  when: ( ansible_facts['distribution_release'] == 'buster' ) or ( ansible_facts['distribution_release'] == 'bullseye' )
 
 - name: Configure unattended-upgrades (2/3)
   lineinfile:
@@ -118,7 +108,7 @@
     owner: root
     group: root
     mode: '0644'
-  when: ( buster_string in debian_ubuntu_version.stdout ) or ( bullseye_string in debian_ubuntu_version.stdout )
+  when: ( ansible_facts['distribution_release'] == 'buster' ) or ( ansible_facts['distribution_release'] == 'bullseye' )
 
 - name: Configure unattended-upgrades (3/3)
   lineinfile:
@@ -128,7 +118,7 @@
     owner: root
     group: root
     mode: '0644'
-  when: ( buster_string in debian_ubuntu_version.stdout ) or ( bullseye_string in debian_ubuntu_version.stdout )
+  when: ( ansible_facts['distribution_release'] == 'buster' ) or ( ansible_facts['distribution_release'] == 'bullseye' )
 
 - name: Enable unattended-upgrades on Ubuntu 20.04 and Ubuntu 22.04
   copy:
@@ -136,13 +126,13 @@
       APT::Periodic::Update-Package-Lists "1";
       APT::Periodic::Unattended-Upgrade "1";
     dest: /etc/apt/apt.conf.d/20auto-upgrades
-  when: ( focal_string in debian_ubuntu_version.stdout ) or ( jammy_string in debian_ubuntu_version.stdout )
+  when: ( ansible_facts['distribution_release'] == 'focal' ) or ( ansible_facts['distribution_release'] == 'jammy' )
 
 - name: Configure unattended-upgrades on Debian 10 and Debian 11
   template:
     src: ./roles/setup-server/templates/50-unattended-upgrades.j2
     dest: /etc/apt/apt.conf.d/50unattended-upgrades
-  when: ( focal_string in debian_ubuntu_version.stdout ) or ( jammy_string in debian_ubuntu_version.stdout )
+  when: ( ansible_facts['distribution_release'] == 'focal' ) or ( ansible_facts['distribution_release'] == 'jammy' )
 
 - name: Check if the swapfile exists
   stat:
@@ -163,15 +153,20 @@
     owner: root
     group: root
     mode: '0600'
-  when: (swapfile_new.delta is defined ) and ( not k8s_service | bool )
+  when: ( swapfile_result.stat.exists ) and ( not k8s_service | bool )
+
+- name: Check if swap is enabled
+  command: swapon --show=NAME
+  register: swapfile_check
+  changed_when: false
 
 - name: Make swapfile
   command: 'mkswap /swapfile'
-  when: (swapfile_new.delta is defined ) and ( not k8s_service | bool )
-  
+  when: ( not swapfile_result.stat.exists ) and ( not k8s_service | bool ) and ( "'/swapfile' not in swapfile_check.stdout" )
+
 - name: Enable swapfile
   command: 'swapon /swapfile'
-  when: (swapfile_new.delta is defined ) and ( not k8s_service | bool )
+  when: ( not k8s_service | bool ) and ( "'/swapfile' not in swapfile_check.stdout" )
 
 - name: Make swapfile permanent in /etc/fstab
   mount: name=none

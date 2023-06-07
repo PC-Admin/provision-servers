@@ -26,31 +26,35 @@
 # Ubuntu	20.04 (LTS) x64	ubuntu-20-04-x64
 
 # Server Settings
-server_url: pg2.testing.org
-server_subdomains: [ 'matrix' ]
-server_ssh_by_ip: true
+server_url: pg01.testing.org
+server_subdomains: [ 'pg01' ]
+swap_size: "2G"
+ssh_key_file_public: ~/.ssh/somekey_ed25519.pub
+ssh_key_file_private: ~/.ssh/somekey_ed25519
 
-# If the server will host the following services
+# If the server will host the following services:
 matrix_service: true
 k8s_service: false
 
 # Proxmox Settings
-spawn_on_proxmox: false
+spawn_on_proxmox: true
 proxmox_host: "10.1.1.50"
 proxmox_node: "proxmox-host"
 proxmox_template: "Template Name"
 proxmox_storage: "Storage Name"
+#proxmox_kvm_cores: 32
+#proxmox_kvm_memory: 32768
 
 # DigitalOcean Settings
-spawn_on_digitalocean: true
-do_droplet_region: sgp1
+spawn_on_digitalocean: false
+do_droplet_region: blr1
 new_slug_size: "s-2vcpu-4gb"
 do_image: "debian-11-x64"
 
-# Server Settings
-swap_size: "4G"
-ssh_key_file_public: ~/.ssh/somekey_ed25519.pub
-ssh_key_file_private: ~/.ssh/somekey_ed25519
+# Static IP Settings
+set_static_ip: true
+static_ipv4_with_mask: "10.1.1.21/16"
+nameservers: [1.1.1.1, 8.8.8.8]
 
 # Cloudflare Settings
 cloudflare_email: michael@perthchat.org

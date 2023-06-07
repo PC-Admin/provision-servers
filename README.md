@@ -23,13 +23,13 @@ $ ansible-galaxy collection install community.general
 
 2) Configure the DigitalOcean and CloudFlare API keys in [group_vars/all](group_vars/all).
 
-3) Run the setup.yml playbook and monitor for the interactive input:
+3) Run the spawn.yml playbook:
 
-`$ ansible-playbook -v -i inventory/hosts setup.yml`
+`$ ansible-playbook -v -i inventory/hosts spawn.yml`
 
 Or even easier, provision a server with automatic CloudFlare DNS configuration:
 
-`$ ansible-playbook -v -i inventory/hosts --tags "cloudflare-dns" setup.yml`
+`$ ansible-playbook -v -i inventory/hosts --tags "cloudflare-dns" spawn.yml`
 
 
 ## Removing Servers

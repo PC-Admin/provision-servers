@@ -6,19 +6,20 @@
     zone: '{{ cloudflare_zone_name }}'
     record: '{{ item }}'
     type: A
-    value: '{{ server_ipv4 }}'
+    ttl: 120
+    value: '{{ server_ipv4_final }}'
     account_email: '{{ cloudflare_email }}'
     account_api_token: '{{ cloudflare_api_token }}'
     state: present
   with_items: "{{ server_subdomains }}"
-  when: ( server_ipv4 | length > 0 )
+  when: ( server_ipv4_final | length > 0 )
   register: record_ipv4
 
 - name: Print the new IPv4 DNS record
   delegate_to: 127.0.0.1
   ansible.builtin.debug:
     msg: Record IPv4 - {{ record_ipv4 }}
-  when: ( server_ipv4 | length > 0 )
+  when: ( server_ipv4_final | length > 0 )
 
 - name: Create AAAA records to point to the servers IP
   delegate_to: 127.0.0.1
@@ -26,6 +27,7 @@
     zone: '{{ cloudflare_zone_name }}'
     record: '{{ item }}'
     type: AAAA
+    ttl: 120
     value: '{{ server_ipv6 }}'
     account_email: '{{ cloudflare_email }}'
     account_api_token: '{{ cloudflare_api_token }}'

@@ -13,7 +13,7 @@
     marker_end: "END SSH config entry for {{ rke2_subdomain }}.{{ awx_domain.split('.')[1:] | join('.') }}"
     block: |
       Host {{ rke2_subdomain }}.{{ awx_domain.split('.')[1:] | join('.') }}
-          HostName {{ server_ip_final }}
+          HostName {{ server_ipv4_final }}
           User root
           Port 22
           IdentityFile {{ ssh_key_file_private }}

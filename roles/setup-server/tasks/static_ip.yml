@@ -1,0 +1,36 @@
+---
+
+- name: Gather facts
+  delegate_to: "{{ server_ipv4 }}"
+  ansible.builtin.setup:
+    gather_subset: network
+
+- name: Backup current netplan configuration
+  delegate_to: "{{ server_ipv4 }}"
+  become: true
+  ansible.builtin.copy:
+    src: /etc/netplan/00-installer-config.yaml
+    dest: "/etc/netplan/00-installer-config.yaml.bak.{{ ansible_date_time.iso8601_micro }}"
+    remote_src: true
+  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy') and ( set_static_ip | bool )
+
+- name: Set static IP
+  delegate_to: "{{ server_ipv4 }}"
+  become: true
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/static_netplan.j2"
+    dest: /etc/netplan/00-installer-config.yaml
+  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy') and ( set_static_ip | bool )
+
+- name: Apply netplan configuration
+  delegate_to: "{{ server_ipv4 }}"
+  become: true
+  ansible.builtin.shell: | # The sleep here is needed so that ansible can exit the SSH session before the change occurs
+      nohup bash -c "sleep 1 && netplan apply" &
+  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy') and ( set_static_ip | bool )
+
+- name: Sleep for 5 seconds to allow host to come up
+  delegate_to: localhost
+  pause:
+    seconds: 5
+  run_once: true

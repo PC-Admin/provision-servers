@@ -14,20 +14,20 @@
 - meta: end_play
   when: ( server_ipv4 | length == 0 ) and ( server_ipv6 | length == 0 )
 
-- name: Set server_ip_final if both IPv4 and IPv6 are defined.
+- name: Set server_ipv4_final if both IPv4 and IPv6 are defined.
   delegate_to: localhost
   set_fact:
-    server_ip_final: '{{ server_ipv4 }}'
+    server_ipv4_final: '{{ server_ipv4 }}'
   when: ( server_ipv4 | length > 0 ) and ( server_ipv6 | length > 0 )
 
-- name: Set server_ip_final if only IPv4 is defined.
+- name: Set server_ipv4_final if only IPv4 is defined.
   delegate_to: localhost
   set_fact:
-    server_ip_final: '{{ server_ipv4 }}'
+    server_ipv4_final: '{{ server_ipv4 }}'
   when: ( server_ipv4 | length > 0 ) and ( server_ipv6 | length == 0 )
 
-- name: Set server_ip_final if only IPv6 is defined.
+- name: Set server_ipv4_final if only IPv6 is defined.
   delegate_to: localhost
   set_fact:
-    server_ip_final: '{{ server_ipv6 }}'
+    server_ipv4_final: '{{ server_ipv6 }}'
   when: ( server_ipv4 | length == 0 ) and ( server_ipv6 | length > 0 )

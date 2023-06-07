@@ -4,5 +4,6 @@
   gather_facts: false
 
   roles:
+    - spawn-server
     - setup-server
     - print-dns-setup

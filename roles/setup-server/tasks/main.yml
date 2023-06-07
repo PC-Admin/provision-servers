@@ -1,4 +1,8 @@
 
+# Set static IP on host if requested
+- import_tasks: "{{ role_path }}/tasks/static_ip.yml"
+  tags: always
+
 # Perform initial server setup
 - import_tasks: "{{ role_path }}/tasks/setup_server.yml"
   tags: always

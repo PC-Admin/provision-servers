@@ -1,5 +1,5 @@
 
 [testing_servers]
-matrix.testing.org ansible_host=matrix.testing.org ansible_ssh_user=root
-pg1.testing.org ansible_host=pg1.testing.org ansible_ssh_user=root
-pg2.testing.org ansible_host=pg1.testing.org ansible_ssh_user=root
+matrix.testing.org ansible_host=10.1.1.20 ansible_ssh_user=root
+pg01.testing.org ansible_host=10.1.1.21 ansible_ssh_user=root
+pg02.testing.org ansible_host=10.1.1.22 ansible_ssh_user=root

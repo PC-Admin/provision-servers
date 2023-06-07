@@ -1,0 +1,13 @@
+# This is the network config written by 'subiquity'
+network:
+  renderer: networkd
+  ethernets:
+    {{ ansible_default_ipv4.interface }}:
+      addresses:
+        - {{ static_ipv4_with_mask }}
+      nameservers:
+        addresses: [{{ nameservers | join(", ") }}]
+      routes:
+        - to: default
+          via: {{ ansible_default_ipv4.gateway }}
+  version: 2

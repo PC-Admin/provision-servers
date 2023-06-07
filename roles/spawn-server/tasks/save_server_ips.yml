@@ -1,3 +1,12 @@
+---
+
+# Example IPs
+# server_ipv6: "10.1.2.12"
+# static_ipv4_with_mask: "10.1.45.11/16"
+
+- debug:
+    msg: "{{ static_ipv4_with_mask }}"
+  when: ( static_ipv4_with_mask is defined ) and ( set_static_ip | bool )
 
 - debug:
     msg: "{{ server_ipv4 }}"
@@ -13,20 +22,14 @@
 - meta: end_play
   when: ( server_ipv4 | length == 0 ) and ( server_ipv6 | length == 0 )
 
-- name: Set server_ip_final if both IPv4 and IPv6 are defined.
+- name: Set server_ipv4_final if using static IP.
   delegate_to: 127.0.0.1
   set_fact:
-    server_ip_final: '{{ server_ipv4 }}'
-  when: ( server_ipv4 | length > 0 ) and ( server_ipv6 | length > 0 )
+    server_ipv4_final: '{{ static_ipv4_with_mask.split("/")[0] }}'
+  when: ( static_ipv4_with_mask | length > 0 ) and ( set_static_ip | bool )
 
-- name: Set server_ip_final if only IPv4 is defined.
+- name: Set server_ipv4_final if IPv4 is defined.
   delegate_to: 127.0.0.1
   set_fact:
-    server_ip_final: '{{ server_ipv4 }}'
-  when: ( server_ipv4 | length > 0 ) and ( server_ipv6 | length == 0 )
-
-- name: Set server_ip_final if only IPv6 is defined.
-  delegate_to: 127.0.0.1
-  set_fact:
-    server_ip_final: '{{ server_ipv6 }}'
-  when: ( server_ipv4 | length == 0 ) and ( server_ipv6 | length > 0 )
+    server_ipv4_final: '{{ server_ipv4 }}'
+  when: ( server_ipv4 | length > 0 ) and ( not set_static_ip | bool )

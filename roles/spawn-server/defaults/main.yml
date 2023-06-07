@@ -2,7 +2,3 @@
 ssh_key_id_array: []
 server_ipv4: ''
 server_ipv6: ''
-server_ssh_by_ip: false
-
-#proxmox_kvm_cores: 4
-#proxmox_kvm_memory: 4096
