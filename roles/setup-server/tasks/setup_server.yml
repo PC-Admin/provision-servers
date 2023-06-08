@@ -32,6 +32,7 @@
   apt:
     pkg:
      - git
+     - gpg
      - openssl
      - unattended-upgrades
      - apt-listchanges
@@ -48,6 +49,7 @@
     owner: root
     group: root
     mode: '0644'
+  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' )
 
 - name: Permanently set DNS to Cloudflare with a new /etc/systemd/resolved.conf.d/ config file
   ansible.builtin.copy:
@@ -56,11 +58,13 @@
     owner: root
     group: root
     mode: '0644'
+  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' )
 
 - name: Restart systemd-resolved service
   ansible.builtin.systemd:
     state: restarted
     name: systemd-resolved.service
+  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' )
   ignore_errors: true
 
 - name: Add ansible package for Ubuntu 20.04 or Ubuntu 22.04 or Debian 11
@@ -98,7 +102,7 @@
     owner: root
     group: root
     mode: '0644'
-  when: ( ansible_facts['distribution_release'] == 'buster' ) or ( ansible_facts['distribution_release'] == 'bullseye' )
+  when: ( ansible_facts['distribution_release'] == 'bullseye' ) or ( ansible_facts['distribution_release'] == 'bookworm' )
 
 - name: Configure unattended-upgrades (2/3)
   lineinfile:
@@ -108,7 +112,7 @@
     owner: root
     group: root
     mode: '0644'
-  when: ( ansible_facts['distribution_release'] == 'buster' ) or ( ansible_facts['distribution_release'] == 'bullseye' )
+  when: ( ansible_facts['distribution_release'] == 'bullseye' ) or ( ansible_facts['distribution_release'] == 'bookworm' )
 
 - name: Configure unattended-upgrades (3/3)
   lineinfile:
@@ -118,7 +122,7 @@
     owner: root
     group: root
     mode: '0644'
-  when: ( ansible_facts['distribution_release'] == 'buster' ) or ( ansible_facts['distribution_release'] == 'bullseye' )
+  when: ( ansible_facts['distribution_release'] == 'bullseye' ) or ( ansible_facts['distribution_release'] == 'bookworm' )
 
 - name: Enable unattended-upgrades on Ubuntu 20.04 and Ubuntu 22.04
   copy:
@@ -167,6 +171,7 @@
 - name: Enable swapfile
   command: 'swapon /swapfile'
   when: ( not k8s_service | bool ) and ( "'/swapfile' not in swapfile_check.stdout" )
+  ignore_errors: true
 
 - name: Make swapfile permanent in /etc/fstab
   mount: name=none

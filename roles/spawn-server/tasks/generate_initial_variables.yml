@@ -50,8 +50,13 @@
     'do_droplet_id': '{{ new_server_info.data.droplet.id }}'
   when: do_droplet_id is defined
 
+- name: Wait for 10 seconds so host can come up
+  pause:
+    seconds: 10
+
 - name: Force SSH connection to skip initial host key check
   delegate_to: localhost
   shell: "ssh {{ server_ipv4 }} -o StrictHostKeyChecking=no -t 'exit'"
   register: wait_for_connection
   until: wait_for_connection.rc == 0
+  retries: 5

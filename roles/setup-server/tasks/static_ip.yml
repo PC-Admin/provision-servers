@@ -5,7 +5,7 @@
   ansible.builtin.setup:
     gather_subset: network
 
-- name: Backup current netplan configuration
+- name: Backup current netplan configuration (Ubuntu)
   delegate_to: "{{ server_ipv4 }}"
   become: true
   ansible.builtin.copy:
@@ -14,7 +14,7 @@
     remote_src: true
   when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy') and ( set_static_ip | bool )
 
-- name: Set static IP
+- name: Set static IP (Ubuntu)
   delegate_to: "{{ server_ipv4 }}"
   become: true
   ansible.builtin.template:
@@ -22,15 +22,44 @@
     dest: /etc/netplan/00-installer-config.yaml
   when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy') and ( set_static_ip | bool )
 
-- name: Apply netplan configuration
+- name: Apply netplan configuration (Ubuntu)
   delegate_to: "{{ server_ipv4 }}"
   become: true
   ansible.builtin.shell: | # The sleep here is needed so that ansible can exit the SSH session before the change occurs
       nohup bash -c "sleep 1 && netplan apply" &
   when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy') and ( set_static_ip | bool )
 
-- name: Sleep for 5 seconds to allow host to come up
+- name: Set static IP (Debian) 1/2
+  delegate_to: "{{ server_ipv4 }}"
+  become: true
+  lineinfile:
+    path: /etc/network/interfaces
+    regexp: '^iface {{ ansible_default_ipv4.interface }} inet dhcp'
+    line: '#iface {{ ansible_default_ipv4.interface }} inet dhcp'
+  when: ( ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm') and ( set_static_ip | bool )
+
+- name: Set static IP (Debian) 2/2
+  delegate_to: "{{ server_ipv4 }}"
+  become: true
+  blockinfile:
+    path: /etc/network/interfaces
+    insertafter: '^#iface {{ ansible_default_ipv4.interface }} inet dhcp'
+    block: |
+      iface {{ ansible_default_ipv4.interface }} inet static
+        address {{ static_ipv4_with_mask.split('/')[0] }}
+        netmask {{ ansible_default_ipv4.netmask }}
+        gateway {{ ansible_default_ipv4.gateway }}
+  when: ( ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm') and ( set_static_ip | bool )
+
+- name: Apply network configuration (Debian)
+  delegate_to: "{{ server_ipv4 }}"
+  become: true
+  ansible.builtin.shell: | # The sleep here is needed so that ansible can exit the SSH session before the change occurs
+      nohup bash -c "sleep 2 && ifdown {{ ansible_default_ipv4.interface }} && sleep 0.5 && ifup {{ ansible_default_ipv4.interface }}" &
+  when: ( ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm') and ( set_static_ip | bool )
+
+- name: Sleep for 10 seconds to allow host to come up
   delegate_to: localhost
   pause:
-    seconds: 5
+    seconds: 10
   run_once: true

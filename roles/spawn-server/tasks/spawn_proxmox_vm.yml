@@ -142,6 +142,7 @@
   when: "item.1.stdout != '' and (item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') | length > 0)"
   loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
   run_once: true
+  ignore_errors: true
 
 #- name: Print vmid lines
 #  debug:
