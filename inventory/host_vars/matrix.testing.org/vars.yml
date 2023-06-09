@@ -22,13 +22,10 @@
 # Server Settings
 server_url: matrix.testing.org
 server_subdomains: [ 'matrix' ]
+enable_swap: true
 swap_size: "4G"
 ssh_key_file_public: ~/.ssh/somekey_ed25519.pub
 ssh_key_file_private: ~/.ssh/somekey_ed25519
-
-# If the server will host the following services:
-matrix_service: true
-k8s_service: false
 
 # Proxmox Settings
 spawn_on_proxmox: true

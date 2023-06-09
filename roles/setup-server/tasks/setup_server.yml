@@ -141,12 +141,12 @@
 - name: Check if the swapfile exists
   stat:
     path: /swapfile
-  when: not k8s_service | bool
+  when: ( enable_swap | bool )
   register: swapfile_result
 
 - name: Create swapfile with the right permissions
   command: 'fallocate -l {{ swap_size }} /swapfile'
-  when: not k8s_service | bool
+  when: ( enable_swap | bool )
   register: swapfile_new
   args:
     creates: /swapfile
@@ -157,7 +157,7 @@
     owner: root
     group: root
     mode: '0600'
-  when: ( swapfile_result.stat.exists ) and ( not k8s_service | bool )
+  when: ( enable_swap | bool ) and ( swapfile_result.stat.exists )
 
 - name: Check if swap is enabled
   command: swapon --show=NAME
@@ -166,11 +166,11 @@
 
 - name: Make swapfile
   command: 'mkswap /swapfile'
-  when: ( not swapfile_result.stat.exists ) and ( not k8s_service | bool ) and ( "'/swapfile' not in swapfile_check.stdout" )
+  when: ( enable_swap | bool ) and ( not swapfile_result.stat.exists ) and ( "'/swapfile' not in swapfile_check.stdout" )
 
 - name: Enable swapfile
   command: 'swapon /swapfile'
-  when: ( not k8s_service | bool ) and ( "'/swapfile' not in swapfile_check.stdout" )
+  when: ( enable_swap | bool ) and ( "'/swapfile' not in swapfile_check.stdout" )
   ignore_errors: true
 
 - name: Make swapfile permanent in /etc/fstab
@@ -181,35 +181,7 @@
          passno=0
          dump=0
          state=present
-  when: not k8s_service | bool
-
-- name: Install docker if requested on target machine
-  apt:
-    pkg:
-     - docker
-  when: matrix_service | bool
-
-- name: Examine if docker is already installed
-  shell: apt list docker-ce
-  when: matrix_service | bool
-  register: docker_installed
-
-# Docker logs pruning, only applied if docker is already installed
-
-- name: Ensure docker config folder exists
-  file:
-    path: '/etc/docker/'
-    owner: root
-    group: root
-    mode: '0755'
-    state: directory
-  when: ( '"installed" in docker_installed.stdout' ) and ( matrix_service | bool )
-
-- name: Save docker config file, template
-  template:
-    src: '{{ role_path }}/templates/daemon.json.j2'
-    dest: '/etc/docker/daemon.json'
-  when: ( '"installed" in docker_installed.stdout' ) and ( matrix_service | bool )
+  when: (enable_swap | bool )
 
 - name: Creates a crontab entry for trimming systemd logs
   cron:
