@@ -3,20 +3,18 @@
   delegate_to: 127.0.0.1
   community.digitalocean.digital_ocean_droplet: 
     state: absent
-    id: '{{ do_droplet_id }}'
-    name: '{{ do_droplet_name }}'
+    name: '{{ server_url }}'
     oauth_token: '{{ do_api_token }}'
-    size: '{{ slug_size }}'
     region: '{{ do_droplet_region }}'
     image: '{{ do_image }}'
     wait: yes
     unique_name: yes
   register: deleted_server_info
-  when: do_droplet_id is defined
+  when: spawn_on_digitalocean | bool
 
 - debug:
     msg: "{{ deleted_server_info }}"
-  when: do_droplet_id is defined
+  when: spawn_on_digitalocean | bool
 
 - name: Remove host entry to ~/.hosts file
   delegate_to: 127.0.0.1
