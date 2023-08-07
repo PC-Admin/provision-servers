@@ -56,7 +56,7 @@
 
 - name: Force SSH connection to skip initial host key check
   delegate_to: localhost
-  shell: "ssh {{ server_ipv4 }} -o StrictHostKeyChecking=no -t 'exit'"
+  shell: "ssh {{ ansible_ssh_user }}@{{ server_ipv4 }} -o StrictHostKeyChecking=no -t 'exit'"
   register: wait_for_connection
   until: wait_for_connection.rc == 0
   retries: 5
