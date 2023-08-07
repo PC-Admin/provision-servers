@@ -54,9 +54,15 @@
   pause:
     seconds: 10
 
-- name: Force SSH connection to skip initial host key check
+- name: Remove host entry from known_hosts file
   delegate_to: localhost
-  shell: "ssh {{ ansible_ssh_user }}@{{ server_ipv4 }} -o StrictHostKeyChecking=no -t 'exit'"
-  register: wait_for_connection
-  until: wait_for_connection.rc == 0
-  retries: 5
+  known_hosts:
+    name: '{{ server_url }}'
+    state: absent
+
+- name: Add the server to known hosts
+  delegate_to: localhost
+  known_hosts:
+    name: '{{ server_url }}'
+    key: "{{ lookup('pipe', 'ssh-keyscan ' + server_url ) }}"
+    state: present

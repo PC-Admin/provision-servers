@@ -183,6 +183,12 @@
          state=present
   when: (enable_swap | bool )
 
+- name: Ensure cron is installed
+  apt:
+    name: cron
+    state: present
+  become: yes
+
 - name: Creates a crontab entry for trimming systemd logs
   cron:
     name: "Trim Systemd Logs"
