@@ -21,10 +21,15 @@
 #- debug:
 #    msg: "{{ ssh_keys }}"
 
+- name: Initialize SSH key ID array
+  delegate_to: 127.0.0.1
+  set_fact:
+    ssh_key_id_array: []
+
 - name: Build an array with the correct SSH key ID
   delegate_to: 127.0.0.1
   set_fact:
-    ssh_key_id_array: "{{ ssh_key_id_array }} + [ '{{ item.id }}' ]"
+    ssh_key_id_array: "{{ ssh_key_id_array + [item.id|string] }}"
   when: item.public_key == public_ssh_key
   loop: "{{ ssh_keys.data|flatten(levels=1) }}"
 
