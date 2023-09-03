@@ -1,1 +1,2 @@
 .vscode
+inventories/*/host_vars/*/vars.yml

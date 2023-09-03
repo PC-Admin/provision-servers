@@ -19,26 +19,26 @@ $ ansible-galaxy collection install community.general
 
 ## Setup Servers
 
-1) Configure the [inventory/](inventory/) files for all the desired hosts appropriately.
+1) Configure the [inventories/](inventories/) files for all the desired inventories and hosts appropriately.
 
 2) Configure the DigitalOcean and CloudFlare API keys in [group_vars/all](group_vars/all).
 
 3) Run the spawn.yml playbook:
 
-`$ ansible-playbook -v -i inventory/hosts spawn.yml`
+`$ ansible-playbook -v -i inventories/demo/hosts spawn.yml`
 
 Or even easier, provision a server with automatic CloudFlare DNS configuration:
 
-`$ ansible-playbook -v -i inventory/hosts --tags "cloudflare-dns" spawn.yml`
+`$ ansible-playbook -v -i inventories/demo/hosts --tags "cloudflare-dns" spawn.yml`
 
 
 ## Removing Servers
 
-`$ ansible-playbook -v -i inventory/hosts remove.yml`
+`$ ansible-playbook -v -i inventories/demo/hosts remove.yml`
 
 Or remove a server and it's CloudFlare DNS record automatically:
 
-`$ ansible-playbook -v -i inventory/hosts --tags "cloudflare-dns" remove.yml`
+`$ ansible-playbook -v -i inventories/demo/hosts --tags "cloudflare-dns" remove.yml`
 
 
 ## License
@@ -50,3 +50,10 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+## Roadmap
+
+- Expand VM disk size with: https://docs.ansible.com/ansible/latest/collections/community/general/proxmox_disk_module.html
+- Stop preserving variables in inventory files
+- Figure out a better (more reliable) SSH hostkey system (should collect hostkey from template?)
+- Batch testing for playbook
