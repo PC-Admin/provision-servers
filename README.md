@@ -22,23 +22,27 @@ $ ansible-galaxy collection install community.general
 1) Configure the [inventories/](inventories/) files for all the desired inventories and hosts appropriately.
 
 2) Configure the DigitalOcean and CloudFlare API keys in [group_vars/all](group_vars/all).
+```
+cp -n group_vars/all.example group_vars/all
+nano group_vars/all
+```
 
 3) Run the spawn.yml playbook:
 
-`$ ansible-playbook -v -i inventories/demo/hosts spawn.yml`
+`ansible-playbook -v -i inventories/demo/hosts spawn.yml`
 
 Or even easier, provision a server with automatic CloudFlare DNS configuration:
 
-`$ ansible-playbook -v -i inventories/demo/hosts --tags "cloudflare-dns" spawn.yml`
+`ansible-playbook -v -i inventories/demo/hosts --tags "cloudflare-dns" spawn.yml`
 
 
 ## Removing Servers
 
-`$ ansible-playbook -v -i inventories/demo/hosts remove.yml`
+`ansible-playbook -v -i inventories/demo/hosts remove.yml`
 
 Or remove a server and it's CloudFlare DNS record automatically:
 
-`$ ansible-playbook -v -i inventories/demo/hosts --tags "cloudflare-dns" remove.yml`
+`ansible-playbook -v -i inventories/demo/hosts --tags "cloudflare-dns" remove.yml`
 
 
 ## License
