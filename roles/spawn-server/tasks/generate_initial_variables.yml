@@ -4,7 +4,7 @@
 - name: Add server_ipv4_final line to inventory file
   delegate_to: localhost
   lineinfile:
-    path: './inventory/host_vars/{{ server_url }}/vars.yml'
+    path: '{{ inventory_dir }}/host_vars/{{ server_url }}/vars.yml'
     regexp: "^#? *{{ item.key | regex_escape() }}:"
     line: "{{ item.key }}: {{ item.value }}"
     mode: '0600'
@@ -16,7 +16,7 @@
 - name: Add server_ipv4 line to inventory file
   delegate_to: 127.0.0.1
   lineinfile:
-    path: './inventory/host_vars/{{ server_url }}/vars.yml'
+    path: '{{ inventory_dir }}/host_vars/{{ server_url }}/vars.yml'
     regexp: "^#? *{{ item.key | regex_escape() }}:"
     line: "{{ item.key }}: {{ item.value }}"
     mode: '0600'
@@ -28,7 +28,7 @@
 - name: Add server_ipv6 line to inventory file
   delegate_to: 127.0.0.1
   lineinfile:
-    path: './inventory/host_vars/{{ server_url }}/vars.yml'
+    path: '{{ inventory_dir }}/host_vars/{{ server_url }}/vars.yml'
     regexp: "^#? *{{ item.key | regex_escape() }}:"
     line: "{{ item.key }}: {{ item.value }}"
     mode: '0600'
@@ -41,7 +41,7 @@
 - name: Add do_droplet_id line to inventory file
   delegate_to: 127.0.0.1
   lineinfile:
-    path: './inventory/host_vars/{{ server_url }}/vars.yml'
+    path: '{{ inventory_dir }}/host_vars/{{ server_url }}/vars.yml'
     regexp: "^{{ item.key }}:.*$"
     line: "{{ item.key }}: {{ item.value }}"
     mode: '0600'
@@ -64,5 +64,6 @@
   delegate_to: localhost
   known_hosts:
     name: '{{ server_url }}'
-    key: "{{ lookup('pipe', 'ssh-keyscan ' + server_url ) }}"
+    #key: "{{ lookup('pipe', 'ssh-keyscan ' + server_url ) }}"
+    key: "{{ proxmox_template_host_key }}"
     state: present
