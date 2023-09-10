@@ -37,7 +37,7 @@
     api_token_secret: "{{ proxmox_token_secret }}"
     node: "{{ proxmox_node }}"
     type: qemu
-    vmid: "{{ vmid }}"
+    vmid: "{{ old_server_info.vmid }}"
   register: vm_info
   until: ( vm_info.proxmox_vms | length > 0 and vm_info.proxmox_vms[0].status == 'stopped' ) or vm_info.proxmox_vms | length == 0
   retries: 12

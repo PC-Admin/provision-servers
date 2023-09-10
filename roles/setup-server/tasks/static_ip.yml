@@ -61,6 +61,7 @@
   when: ( ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm') and ( set_static_ip | bool )
 
 - name: Wait for SSH to come up
+  delegate_to: "{{ server_ipv4_final }}"
   wait_for:
     host: "{{ server_ipv4_final }}"
     port: 22

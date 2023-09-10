@@ -61,4 +61,5 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - Stop preserving variables in inventory files
 - Figure out a better (more reliable) SSH hostkey system (should collect hostkey from template?) - DONE
 - Batch testing for playbook
-- add dynamic firewall section for UFW
+- add dynamic firewall section for UFW - https://github.com/application-research/haproxy-cluster-playbook/compare/main...PC-Admin:haproxy-cluster-playbook:ufw-changes
+- cleanup known hosts when deleting servers
