@@ -150,17 +150,17 @@
 #  with_items: "{{ new_server_info.results }}"
 #  run_once: true
 
-- name: Add vmid line to each hosts inventory file
-  delegate_to: localhost
-  lineinfile:
-    path: '{{ inventory_dir }}/host_vars/{{ item.0 }}/vars.yml'
-    regexp: "^#?vmid:.*$"
-    line: "vmid: {{ item.1.vmid | regex_replace('^VM (\\d+) started$', '\\1') }}"
-    mode: '0600'
-    state: present
-  when: ( item.1.vmid is defined ) and ( item.1.vmid | string | length > 0 ) 
-  loop: "{{ ansible_play_hosts | zip(new_server_info_vm.results) | list }}"
-  run_once: true
+# - name: Add vmid line to each hosts inventory file
+#   delegate_to: localhost
+#   lineinfile:
+#     path: '{{ inventory_dir }}/host_vars/{{ item.0 }}/vars.yml'
+#     regexp: "^#?vmid:.*$"
+#     line: "vmid: {{ item.1.vmid | regex_replace('^VM (\\d+) started$', '\\1') }}"
+#     mode: '0600'
+#     state: present
+#   when: ( item.1.vmid is defined ) and ( item.1.vmid | string | length > 0 ) 
+#   loop: "{{ ansible_play_hosts | zip(new_server_info_vm.results) | list }}"
+#   run_once: true
 
 - name: "Load new variables from the inventory file of each host"
   include_vars:
