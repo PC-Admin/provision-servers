@@ -8,5 +8,5 @@
   tags: always
 
 # Perform firewall setup
-- import_tasks: "{{ role_path }}/tasks/setup_firewall.yml"
-  when: matrix_service | bool
+#- import_tasks: "{{ role_path }}/tasks/setup_firewall.yml"
+#  when: matrix_service | bool

@@ -54,16 +54,43 @@
   pause:
     seconds: 10
 
-- name: Remove host entry from known_hosts file
+- name: Remove host entry from known_hosts file (1/3)
   delegate_to: localhost
   known_hosts:
     name: '{{ server_url }}'
     state: absent
 
-- name: Add the server to known hosts
+- name: Remove host entry from known_hosts file (2/3)
+  delegate_to: localhost
+  known_hosts:
+    name: '{{ server_ipv4 }}'
+    state: absent
+
+- name: Remove host entry from known_hosts file if static IP is being used (3/3)
+  delegate_to: localhost
+  known_hosts:
+    name: '{{ server_ipv4_final }}'
+    state: absent
+  when: set_static_ip | bool
+
+- name: Add the server URL to known hosts
   delegate_to: localhost
   known_hosts:
     name: '{{ server_url }}'
-    #key: "{{ lookup('pipe', 'ssh-keyscan ' + server_url ) }}"
-    key: "{{ proxmox_template_host_key }}"
+    key: "{{ inventory_hostname }} {{ proxmox_template_host_key }}"
     state: present
+
+- name: Add the server IPv4 to known hosts
+  delegate_to: localhost
+  known_hosts:
+    name: '{{ server_ipv4 }}'
+    key: "{{ server_ipv4 }} {{ proxmox_template_host_key }}"
+    state: present
+
+- name: Add the "Final server IPv4" to known hosts if static IP is being used
+  delegate_to: localhost
+  known_hosts:
+    name: '{{ server_ipv4_final }}'
+    key: "{{ server_ipv4_final }} {{ proxmox_template_host_key }}"
+    state: present
+  when: set_static_ip | bool

@@ -11,9 +11,9 @@ I created it as a devops tool to speed up testing.
 
 Some packages need to be installed on the ansible controller to provision VMs on Proxmox:
 ```
-$ pip3 install proxmoxer
-$ pip3 install requests
-$ ansible-galaxy collection install community.general
+pip3 install proxmoxer
+pip3 install requests
+ansible-galaxy collection install community.general
 ```
 
 
@@ -61,3 +61,4 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - Stop preserving variables in inventory files
 - Figure out a better (more reliable) SSH hostkey system (should collect hostkey from template?)
 - Batch testing for playbook
+- add dynamic firewall section for UFW

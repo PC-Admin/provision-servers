@@ -1,0 +1,9 @@
+
+- name: "Creates Digitalocean droplet or Proxmox kvm, performs initial setup of server."
+  hosts: testing_servers
+  gather_facts: false
+
+  tasks:
+  - name: Print location of inventory directory
+    debug:
+      msg: "{{ inventory_dir }}"

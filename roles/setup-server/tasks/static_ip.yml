@@ -1,6 +1,7 @@
 ---
 
 - name: Gather facts
+  delegate_to: "{{ server_ipv4 }}"
   ansible.builtin.setup:
     gather_subset: network
 
