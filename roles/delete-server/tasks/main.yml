@@ -1,3 +1,4 @@
+---
 
 # Delete DigitalOcean Server:
 - import_tasks: "{{ role_path }}/tasks/delete_do_droplet.yml"

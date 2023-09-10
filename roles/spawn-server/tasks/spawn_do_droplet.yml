@@ -1,3 +1,4 @@
+---
 
 - name: Define slug_size if undefined (first run)
   delegate_to: 127.0.0.1

@@ -1,4 +1,5 @@
-       
+---
+
 - name: Remove existing Digital Ocean Droplet
   delegate_to: 127.0.0.1
   community.digitalocean.digital_ocean_droplet: 
