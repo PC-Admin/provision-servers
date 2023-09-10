@@ -80,7 +80,7 @@
     key: "{{ inventory_hostname }} {{ proxmox_template_host_key }}"
     state: present
 
-- name: Add the server IPv4 to known hosts
+- name: Add the initial server IPv4 to known hosts
   delegate_to: localhost
   known_hosts:
     name: '{{ server_ipv4 }}'

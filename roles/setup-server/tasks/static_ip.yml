@@ -51,15 +51,20 @@
         gateway {{ ansible_default_ipv4.gateway }}
   when: ( ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm') and ( set_static_ip | bool )
 
-- name: Apply network configuration (Debian)
+- name: Apply the new networking configuration (Debian)
   delegate_to: "{{ server_ipv4 }}"
   become: true
-  ansible.builtin.shell: | # The sleep here is needed so that ansible can exit the SSH session before the change occurs
-      nohup bash -c "sleep 2 && ifdown {{ ansible_default_ipv4.interface }} && sleep 0.5 && ifup {{ ansible_default_ipv4.interface }}" &
+  ansible.builtin.shell: |
+    nohup bash -c 'sleep 5 && systemctl restart networking' &
+  async: 10
+  poll: 0
   when: ( ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm') and ( set_static_ip | bool )
 
-- name: Sleep for 10 seconds to allow host to come up
-  delegate_to: localhost
-  pause:
-    seconds: 10
-  run_once: true
+- name: Wait for SSH to come up
+  wait_for:
+    host: "{{ server_ipv4_final }}"
+    port: 22
+    state: started
+    delay: 5       # Delay the first check by 5 seconds
+    timeout: 120   # Fail after 2 minutes
+    sleep: 5       # Check every 5 seconds

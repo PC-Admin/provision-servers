@@ -59,6 +59,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 - Expand VM disk size with: https://docs.ansible.com/ansible/latest/collections/community/general/proxmox_disk_module.html
 - Stop preserving variables in inventory files
-- Figure out a better (more reliable) SSH hostkey system (should collect hostkey from template?)
+- Figure out a better (more reliable) SSH hostkey system (should collect hostkey from template?) - DONE
 - Batch testing for playbook
 - add dynamic firewall section for UFW
