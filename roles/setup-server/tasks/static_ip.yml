@@ -60,6 +60,15 @@
   poll: 0
   when: ( ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm') and ( set_static_ip | bool )
 
+- name: Ping the host at it's new IP until it's reachable
+  delegate_to: localhost
+  command: "ping -c 1 {{ server_ipv4_final }}"
+  register: icmp_ping_result
+  until: icmp_ping_result.rc == 0
+  retries: 12
+  delay: 5
+  ignore_errors: true
+
 - name: Wait for SSH to come up
   delegate_to: "{{ server_ipv4_final }}"
   wait_for:
@@ -69,3 +78,4 @@
     delay: 5       # Delay the first check by 5 seconds
     timeout: 120   # Fail after 2 minutes
     sleep: 5       # Check every 5 seconds
+  when: icmp_ping_result is succeeded

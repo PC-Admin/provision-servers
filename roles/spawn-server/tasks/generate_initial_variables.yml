@@ -2,43 +2,6 @@
 
 # Append to server_vars.yml variable file (updatable)
 
-- name: Add server_ipv4_final line to inventory file
-  delegate_to: localhost
-  lineinfile:
-    path: '{{ inventory_dir }}/host_vars/{{ server_url }}/vars.yml'
-    regexp: "^#? *{{ item.key | regex_escape() }}:"
-    line: "{{ item.key }}: {{ item.value }}"
-    mode: '0600'
-    state: present
-  with_dict:
-    'server_ipv4_final': '"{{ server_ipv4_final }}"'
-  when: server_ipv4_final|length > 0
-
-- name: Add server_ipv4 line to inventory file
-  delegate_to: 127.0.0.1
-  lineinfile:
-    path: '{{ inventory_dir }}/host_vars/{{ server_url }}/vars.yml'
-    regexp: "^#? *{{ item.key | regex_escape() }}:"
-    line: "{{ item.key }}: {{ item.value }}"
-    mode: '0600'
-    state: present
-  with_dict:
-    'server_ipv4': '"{{ server_ipv4 }}"'
-  when: server_ipv4|length > 0
-
-- name: Add server_ipv6 line to inventory file
-  delegate_to: 127.0.0.1
-  lineinfile:
-    path: '{{ inventory_dir }}/host_vars/{{ server_url }}/vars.yml'
-    regexp: "^#? *{{ item.key | regex_escape() }}:"
-    line: "{{ item.key }}: {{ item.value }}"
-    mode: '0600'
-    state: present
-  with_dict:
-    'server_ipv6': '"{{ server_ipv6 }}"'
-  when: server_ipv6 is not none and server_ipv6|length > 0
-  ignore_errors: true
-
 - name: Add do_droplet_id line to inventory file
   delegate_to: 127.0.0.1
   lineinfile:

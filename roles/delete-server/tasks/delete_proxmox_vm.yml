@@ -39,6 +39,7 @@
     type: qemu
     vmid: "{{ old_server_info.vmid }}"
   register: vm_info
+  when: old_server_info.vmid is defined
   until: ( vm_info.proxmox_vms | length > 0 and vm_info.proxmox_vms[0].status == 'stopped' ) or vm_info.proxmox_vms | length == 0
   retries: 12
   delay: 15
@@ -46,17 +47,21 @@
 - name: Print VM status from proxmox_vm_info
   debug:
     msg: "VM {{ vm_info.proxmox_vms[0].name }} status: {{ vm_info.proxmox_vms[0].status }}"
-  when: vm_info.proxmox_vms | length > 0
+  when:
+    - vm_info.proxmox_vms is defined
+    - vm_info.proxmox_vms | length > 0
 
 - name: "If VM still exists, wait 5 seconds for it to actually stop!"
   pause:
     seconds: 5
-  when: vm_info.proxmox_vms | length > 0
+  when:
+    - vm_info.proxmox_vms is defined
+    - vm_info.proxmox_vms | length > 0
 
 - name: Notify that VM does not exist or could not be retrieved
   debug:
     msg: "The VM does not exist or could not be retrieved."
-  when: vm_info.proxmox_vms | length == 0
+  when: vm_info.proxmox_vms is not defined or vm_info.proxmox_vms | length == 0
 
 - name: Delete the proxmox VM
   delegate_to: 127.0.0.1

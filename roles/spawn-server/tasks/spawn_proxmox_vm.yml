@@ -27,17 +27,6 @@
   when: new_server_info_vm is defined
   run_once: true
 
-#- name: "Print the vmid of each entry from new_server_info_vm.results"
-#  debug:
-#    msg:
-#      hostname: "{{ item.item }}"
-#      node: "{{ item.invocation.module_args.node }}"
-#      vmid: "{{ item.vmid }}"
-#  with_items: "{{ new_server_info_vm.results }}"
-#  when: ( new_server_info_vm is defined ) and ( proxmox_method == "clone" )
-#  run_once: true
-#  ignore_errors: true
-
 - name: Start the new VMs (sequentially)
   delegate_to: localhost
   community.general.proxmox_kvm:
@@ -64,17 +53,6 @@
   with_items: "{{ new_server_info_vm2.results }}"
   run_once: true
 
-# - name: Probe proxmox host for VMs network details for up to 180 seconds
-#   delegate_to: "{{ proxmox_node }}"
-#   command: |
-#       sudo qm guest cmd {{ item }} network-get-interfaces
-#   register: qemu_guest_info
-#   until: qemu_guest_info.stderr != qemu_unloaded_status
-#   retries: 12
-#   delay: 15
-#   with_items: "{{ new_server_info.results | json_query('[*].vmid') | list }}"
-#   run_once: true
-
 - name: Set string fact for checking is QEMU is running yet
   set_fact:
     qemu_unloaded_status: "QEMU guest agent is not running"
@@ -91,77 +69,27 @@
   run_once: true
   ignore_errors: true
 
-#- name: qemu_guest_info
-#  debug:
-#    msg: "{{ qemu_guest_info }}"
-
-#- name: qemu_guest_info.results
-#  debug:
-#    msg: "{{ qemu_guest_info.results }}"
-
-#- name: "Print the stdout of each entry from qemu_guest_info.results"
-#  debug:
-#    msg: "{{ item.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
-#  with_items: "{{ qemu_guest_info.results }}"
-#  run_once: true
-
-#- name: "Print the stdout of each entry from qemu_guest_info.results"
-#  debug:
-#    msg: "{{ item.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
-#  with_items: "{{ qemu_guest_info.results }}"
-#  run_once: true
-
-# https://stackoverflow.com/questions/46411107/iterating-over-two-lists-in-ansible
-
-#- name: "Print the ansible hostname as well as the server_ipv4 variable"
-#  debug:
-#    msg: "{{ item.0 }} - {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
-#  loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
-#  run_once: true
-
-- name: "Write IPv4 to each hosts inventory file"
-  delegate_to: 127.0.0.1
-  lineinfile:
-    path: '{{ inventory_dir }}/host_vars/{{ item.0 }}/vars.yml'
-    regexp: "^#?server_ipv4:.*$"
-    line: "server_ipv4: {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
-    mode: '0600'
-    state: present
+- name: Print all IPv4 and IPv6 IP addresses with the respective hostname
+  debug:
+    msg:
+      - "hostname: {{ item.0 }}"
+      - "server_ipv4: {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
+      - "server_ipv6: {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
   when: "item.1.stdout != '' and (item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') | length > 0)"
   loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
   run_once: true
 
-- name: "Write IPv6 to each hosts inventory file"
-  delegate_to: 127.0.0.1
-  lineinfile:
-    path: '{{ inventory_dir }}/host_vars/{{ item.0 }}/vars.yml'
-    regexp: "^#?server_ipv6:.*$"
-    line: "server_ipv6: {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
-    mode: '0600'
-    state: present
-  when: "item.1.stdout != '' and (item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') | length > 0)"
+- name: For each host, define a server_ipv4 and server_ipv6 variable
+  set_fact:
+    server_ipv4: "{{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
+    server_ipv6: "{{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
+  when: "item.1.stdout != '' and (item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') | length > 0) and (inventory_hostname == item.0)"
   loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
-  run_once: true
-  ignore_errors: true
 
-#- name: Print vmid lines
-#  debug:
-#    msg: "{{ item.vmid }}"
-#  with_items: "{{ new_server_info.results }}"
-#  run_once: true
+- name: "Debug server_ipv4"
+  debug:
+    msg: "IPv4 for {{ inventory_hostname }} is {{ server_ipv4 }}"
 
-# - name: Add vmid line to each hosts inventory file
-#   delegate_to: localhost
-#   lineinfile:
-#     path: '{{ inventory_dir }}/host_vars/{{ item.0 }}/vars.yml'
-#     regexp: "^#?vmid:.*$"
-#     line: "vmid: {{ item.1.vmid | regex_replace('^VM (\\d+) started$', '\\1') }}"
-#     mode: '0600'
-#     state: present
-#   when: ( item.1.vmid is defined ) and ( item.1.vmid | string | length > 0 ) 
-#   loop: "{{ ansible_play_hosts | zip(new_server_info_vm.results) | list }}"
-#   run_once: true
-
-- name: "Load new variables from the inventory file of each host"
-  include_vars:
-    file: '{{ inventory_dir }}/host_vars/{{ inventory_hostname }}/vars.yml'
+- name: "Debug server_ipv6"
+  debug:
+    msg: "IPv6 for {{ inventory_hostname }} is {{ server_ipv6 }}"
