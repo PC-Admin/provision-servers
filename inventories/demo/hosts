@@ -1,7 +1,0 @@
-
-[testing_servers]
-test1.penholder.xyz ansible_ssh_user=root
-test2.penholder.xyz ansible_ssh_user=root
-#matrix.testing.org ansible_host=10.1.1.20 ansible_ssh_user=root
-#pg01.testing.org ansible_host=10.1.1.21 ansible_ssh_user=root
-#pg02.testing.org ansible_host=10.1.1.22 ansible_ssh_user=root

@@ -1,3 +1,4 @@
 .vscode
 inventories/*/host_vars/*/vars.yml
+inventories/*/hosts
 group_vars/all
