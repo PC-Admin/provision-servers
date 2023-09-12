@@ -18,6 +18,6 @@
 - import_tasks: "{{ role_path }}/tasks/cloudflare_dns.yml"
   tags: [ 'never', 'cloudflare-dns' ]
 
-# Create initial variable files
-- import_tasks: "{{ role_path }}/tasks/generate_initial_variables.yml"
+# Configure known hosts
+- import_tasks: "{{ role_path }}/tasks/known_hosts.yml"
   tags: always

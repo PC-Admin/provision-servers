@@ -51,9 +51,9 @@
     - vm_info.proxmox_vms is defined
     - vm_info.proxmox_vms | length > 0
 
-- name: "If VM still exists, wait 5 seconds for it to actually stop!"
+- name: "If VM still exists, wait 10 seconds for it to actually stop!"
   pause:
-    seconds: 5
+    seconds: 10
   when:
     - vm_info.proxmox_vms is defined
     - vm_info.proxmox_vms | length > 0

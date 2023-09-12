@@ -15,6 +15,7 @@
     state: present
     timeout: 300
   register: new_server_info_vm
+  when: hostvars[item].spawn_on_proxmox | bool
   loop: "{{ ansible_play_hosts }}"
   loop_control:
     pause: 1
@@ -27,7 +28,7 @@
   when: new_server_info_vm is defined
   run_once: true
 
-- name: Start the new VMs (sequentially)
+- name: Start the new Proxmox VMs (sequentially)
   delegate_to: localhost
   community.general.proxmox_kvm:
     api_host: "{{ proxmox_host }}"
@@ -39,6 +40,7 @@
     state: started
   register: new_server_info_vm2
   with_items: "{{ new_server_info_vm.results }}"
+  when: item.vmid is defined
   run_once: true
 
 - name: Print stdout of new_server_info_vm2.results
@@ -50,17 +52,23 @@
 - name: Print stdout of new_server_info_vm2.results
   debug:
     msg: "VMID: {{ item.vmid }}, Node: {{ item.item.invocation.module_args.node }}, Status: {{ item.status }}"
+  when:
+    - item.vmid is defined
+    - item.item.invocation.module_args.node is defined
+    - item.status is defined
   with_items: "{{ new_server_info_vm2.results }}"
   run_once: true
 
 - name: Set string fact for checking is QEMU is running yet
   set_fact:
     qemu_unloaded_status: "QEMU guest agent is not running"
+  when: spawn_on_proxmox | bool
 
 - name: Probe proxmox host for VMs network details for up to 180 seconds
   delegate_to: "{{ item.item.invocation.module_args.node }}"
   command: |
       sudo qm guest cmd {{ item.vmid }} network-get-interfaces
+  when: item.vmid is defined
   with_items: "{{ new_server_info_vm2.results }}"
   until: qemu_guest_info.stderr != qemu_unloaded_status
   loop_control:
@@ -75,7 +83,10 @@
       - "hostname: {{ item.0 }}"
       - "server_ipv4: {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
       - "server_ipv6: {{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
-  when: "item.1.stdout != '' and (item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') | length > 0)"
+  when:
+    - hostvars[item.0].spawn_on_proxmox | bool
+    - item.1.stdout != ''
+    - (item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') | length > 0)
   loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
   run_once: true
 
@@ -83,13 +94,19 @@
   set_fact:
     server_ipv4: "{{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') }}"
     server_ipv6: "{{ item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][1] | [1]') | json_query('[\"ip-address\"][0]') }}"
-  when: "item.1.stdout != '' and (item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') | length > 0) and (inventory_hostname == item.0)"
+  when:
+    - hostvars[item.0].spawn_on_proxmox | bool
+    - item.1.stdout != ''
+    - item.1.stdout | from_json | json_query('[*][\"ip-addresses\"][0][0] | [1]') | json_query('[\"ip-address\"][0]') | length > 0
+    - inventory_hostname == item.0
   loop: "{{ ansible_play_hosts | zip(qemu_guest_info.results) | list }}"
 
 - name: "Debug server_ipv4"
   debug:
     msg: "IPv4 for {{ inventory_hostname }} is {{ server_ipv4 }}"
+  when: spawn_on_proxmox | bool
 
 - name: "Debug server_ipv6"
   debug:
     msg: "IPv6 for {{ inventory_hostname }} is {{ server_ipv6 }}"
+  when: spawn_on_proxmox | bool

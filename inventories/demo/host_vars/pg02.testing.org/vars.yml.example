@@ -57,5 +57,3 @@ nameservers: [1.1.1.1, 8.8.8.8]
 # Cloudflare Settings
 cloudflare_email: michael@perthchat.org
 cloudflare_zone_name: testing.org
-
-# Other Settings

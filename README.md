@@ -2,9 +2,9 @@
 
 This playbook configures 1 to N servers using either DigitalOcean or a Proxmox cluster, it also adds/removes the DNS records for each server automatically using CloudFlare.
 
-It also automatically configures ~/.ssh/config and ~/.hosts files to allow for an immediate SSH connection, so you can start working sooner!
+It also automatically adds new hosts to your known_hosts to allow for an immediate SSH connection, so you can start working sooner!
 
-I created it as a devops tool to speed up testing.
+It was created as a devops tool to help speed up testing.
 
 
 ## Prerequisites
@@ -15,6 +15,33 @@ pip3 install proxmoxer
 pip3 install requests
 ansible-galaxy collection install community.general
 ```
+
+
+## Create Proxmox VM Template
+
+1) Create a new VM in Proxmox with either Debian 12 or Ubuntu 22.04.
+
+2) Make the root disk 16GB with no LVM and a single root partition with no swap.
+
+3) Install QEMU guest agent and enable it:
+```
+apt install qemu-guest-agent
+systemctl enable qemu-guest-agent
+```
+
+4) Add SSH keys to the desired user account.
+
+5) Collect the ed25519 host key from the template:
+```
+cat /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+6) Collect the systemd machine-id from the template:
+```
+cat /etc/machine-id
+```
+
+7) Shutdown the VM and create a template from it through the Proxmox GUI.
 
 
 ## Setup Servers
