@@ -14,6 +14,7 @@ Some packages need to be installed on the ansible controller to provision VMs on
 pip3 install proxmoxer
 pip3 install requests
 ansible-galaxy collection install community.general
+ansible-galaxy install pc_admin.ansible_role_ufw
 ```
 
 
@@ -58,18 +59,17 @@ nano group_vars/all
 
 `ansible-playbook -v -i inventories/demo/hosts spawn.yml`
 
-Or even easier, provision a server with automatic CloudFlare DNS configuration:
-
-`ansible-playbook -v -i inventories/demo/hosts --tags "cloudflare-dns" spawn.yml`
-
 
 ## Removing Servers
 
 `ansible-playbook -v -i inventories/demo/hosts remove.yml`
 
-Or remove a server and it's CloudFlare DNS record automatically:
 
-`ansible-playbook -v -i inventories/demo/hosts --tags "cloudflare-dns" remove.yml`
+## Tags
+
+To only remove CloudFlare DNS records, use the `cloudflare-dns` tag:
+
+`ansible-playbook -v -i inventories/demo/hosts --tags cloudflare-dns remove.yml`
 
 
 ## License

@@ -1,13 +1,17 @@
 ---
 
+# Gather facts
+- name: Gather facts
+  delegate_to: "{{ server_ipv4 }}"
+  ansible.builtin.setup:
+    gather_subset: network
+
 # Set static IP on host if requested
 - import_tasks: "{{ role_path }}/tasks/static_ip.yml"
-  tags: always
+  when: set_static_ip | bool
+
+# Establish a SSH connection to the server
+- import_tasks: "{{ role_path }}/tasks/ssh_connect.yml"
 
 # Perform initial server setup
 - import_tasks: "{{ role_path }}/tasks/setup_server.yml"
-  tags: always
-
-# Perform firewall setup
-#- import_tasks: "{{ role_path }}/tasks/setup_firewall.yml"
-#  when: matrix_service | bool

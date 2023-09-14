@@ -1,8 +1,10 @@
 
-- name: "Creates Digitalocean droplet or Proxmox kvm, performs initial setup of server."
+- name: "Performs just the initial setup of server."
   hosts: testing_servers
   gather_facts: false
 
   roles:
     - setup-server
     - print-dns-setup
+    - when: ufw_enabled | bool
+      role: galaxy/pc_admin.ansible_role_ufw

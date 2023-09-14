@@ -55,5 +55,46 @@ static_ipv4_with_mask: "10.1.1.21/16"
 nameservers: [1.1.1.1, 8.8.8.8]
 
 # Cloudflare Settings
+cloudflare_dns: true
 cloudflare_email: michael@perthchat.org
 cloudflare_zone_name: testing.org
+
+# UFW Settings
+ufw_enabled: true
+ufw_allow_dict:
+  - { rule: 'allow', port: 22, proto: 'tcp', from_ip: 10.24.0.0/16, insert_relative_to: 'first-ipv4' }
+  - { rule: 'allow', port: 443, proto: 'any', from_ip: 'any', insert_relative_to: 'last-ipv4' }
+  - { rule: 'allow', port: 80, proto: 'tcp', from_ip: 'any', insert_relative_to: 'last-ipv4' }
+  - { rule: 'allow', port: 5432, proto: 'any', from_ip: 10.24.0.0/16, insert_relative_to: 'last-ipv4' }
+
+#item.rule:
+#  - "allow" [DEFAULT]
+#  - "deny"
+#  - "limit"
+#  - "reject"
+
+# TCP/IP protocol. Choices:
+#item.proto:
+#  - "any" [DEFAULT]
+#  - "tcp"
+#  - "udp"
+#  - "ipv6"
+#  - "esp"
+#  - "ah"
+#  - "gre"
+#  - "igmp"
+
+#item.direction:
+#  - "in" [DEFAULT]
+#  - "incoming"
+#  - "out"
+#  - "outgoing"
+#  - "routed"
+
+#item.insert_relative_to:
+# Allows to interpret the index in insert relative to a position.
+# zero interprets the rule number as an absolute index (i.e. 1 is the first rule). [DEFAULT]
+# first-ipv4 interprets the rule number relative to the index of the first IPv4 rule, or relative to the position where the first IPv4 rule would be if there is currently none.
+# last-ipv4 interprets the rule number relative to the index of the last IPv4 rule, or relative to the position where the last IPv4 rule would be if there is currently none.
+# first-ipv6 interprets the rule number relative to the index of the first IPv6 rule, or relative to the position where the first IPv6 rule would be if there is currently none.
+# last-ipv6 interprets the rule number relative to the index of the last IPv6 rule, or relative to the position where the last IPv6 rule would be if there is currently none.

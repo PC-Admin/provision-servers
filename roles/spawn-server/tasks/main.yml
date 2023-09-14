@@ -3,21 +3,17 @@
 # Spawn a Server
 - import_tasks: "{{ role_path }}/tasks/spawn_do_droplet.yml"
   when: spawn_on_digitalocean | bool
-  tags: always
 
 # Spawn a Server
 - import_tasks: "{{ role_path }}/tasks/spawn_proxmox_vm.yml"
   when: spawn_on_proxmox | bool
-  tags: always
 
 # Save server IPs
 - import_tasks: "{{ role_path }}/tasks/save_server_ips.yml"
-  tags: always
 
 # Create Cloudflare DNS entry
 - import_tasks: "{{ role_path }}/tasks/cloudflare_dns.yml"
-  tags: [ 'never', 'cloudflare-dns' ]
+  when: cloudflare_dns | bool
 
 # Configure known hosts
 - import_tasks: "{{ role_path }}/tasks/known_hosts.yml"
-  tags: always
