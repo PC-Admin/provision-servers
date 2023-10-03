@@ -11,6 +11,18 @@
   become: true
   shell: update-locale LANG="C.UTF-8"
 
+- name: Get current machine-id
+  delegate_to: "{{ server_ipv4_final }}"
+  command: cat /etc/machine-id
+  register: current_machine_id
+  changed_when: false  # This ensures that Ansible doesn't report this task as having made changes
+
+- name: Generate a new machine-id if it matches the template's machine-id
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  shell: echo $(cat /dev/urandom | tr -dc 'a-f0-9' | fold -w 32 | head -n 1) > /etc/machine-id
+  when: current_machine_id.stdout == proxmox_template_machine_id
+
 - name: Update repositories
   delegate_to: "{{ server_ipv4_final }}"
   become: true

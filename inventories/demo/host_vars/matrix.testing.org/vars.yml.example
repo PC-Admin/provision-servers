@@ -33,6 +33,7 @@ proxmox_host: "10.1.1.50"
 proxmox_node: "proxmox-host"
 proxmox_template: "Template Name"
 proxmox_template_host_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDgDGy5XTgAUAD5wyyXatjxca8AO+dM/MJrTUolU5du1 root@template"
+proxmox_template_machine_id: "f8aa2f1ac1e74b1e9a721ace372b1be8"
 proxmox_storage: "Storage Name"
 #proxmox_kvm_cores: 32
 #proxmox_kvm_memory: 32768
