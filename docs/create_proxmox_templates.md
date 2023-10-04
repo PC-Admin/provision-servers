@@ -9,7 +9,7 @@ After booting the Debian 12 installation medium you highlight the option to run 
 
 To the end of that command add "d-i:partman-partitioning/default_label=gpt" then you're good to go! Debian will use GPT instead of MBR.
 
-
+![debian_gpt_install](https://github.com/PC-Admin/provision-servers/assets/29645145/9ea41a6f-aba7-42b1-a836-5b7b7236375c)
 
 3) Install QEMU guest agent and enable it, also install sudo:
 ```
