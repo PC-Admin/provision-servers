@@ -1,0 +1,126 @@
+---
+
+- name: Determine underlying physical volume for the root partition
+  shell: pvdisplay -C -o pv_name,vg_name --noheadings | grep -e '-vg' | awk '{print $1}'
+  register: pv_result
+
+- name: Print the physical volume
+  debug:
+    msg: "Physical volume for template-vg: {{ pv_result.stdout }}"
+
+- name: If pv_resolt.stdout ends in a numeral, remove it to get the root device
+  set_fact:
+    root_device: "{{ pv_result.stdout | regex_replace('[0-9]+$', '') }}"
+  when: pv_result.stdout | regex_search('[0-9]+$')
+
+- name: Print the root device
+  debug:
+    msg: "Root device: {{ root_device }}"
+
+- name: If pv_result.stdout ends in a numeral, collect that numeral as the root partition number
+  set_fact:
+    root_partition_number: "{{ pv_result.stdout | regex_search('[0-9]+$') }}"
+
+- name: Print the root partition number
+  debug:
+    msg: "Root partition number: {{ root_partition_number }}"
+
+- name: Collect current size of root disk
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  ansible.builtin.shell: |
+    lsblk -dn -o SIZE -b {{ root_device }} | awk '{ printf "%d", $1/1024/1024/1024 }'
+  register: root_disk_size
+
+- name: Calculate the amount to expand the root disk by
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  set_fact:
+    root_partition_size_to_expand_by: "{{ proxmox_root_disk_size | int - root_disk_size.stdout | int }}"
+
+- name: Create a boolean to determine if the root partition needs to be resized
+  set_fact:
+    resize_root_partition: "{{ root_partition_size_to_expand_by | int > 1 }}"
+
+- name: Resize the root disk
+  delegate_to: localhost
+  community.general.proxmox_disk:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    vmid: "{{ vmid }}"
+    disk: scsi0
+    size: "+{{ root_partition_size_to_expand_by }}G"
+    state: resized
+  when: resize_root_partition | bool
+
+- name: Install GNU parted and gdisk
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  apt:
+    name:
+      - parted
+      - gdisk
+    state: latest
+  register: apt_status
+  until: apt_status is success
+  delay: 6
+  retries: 10
+  when: resize_root_partition | bool
+
+- name: Print current partition table
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  ansible.builtin.shell: |
+    parted --script {{ root_device }} print
+  register: current_partition_table
+  when: resize_root_partition | bool
+
+- name: Print output of parted
+  debug:
+    msg: "{{ current_partition_table.stdout_lines }}"
+  when: resize_root_partition | bool
+
+- name: Resize the GPT partition table with sgdisk
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  ansible.builtin.shell: |
+    sgdisk -e /dev/sda
+  register: resize_partition_table
+  when: resize_root_partition | bool
+
+- name: Resize the root partition
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  ansible.builtin.shell: |
+    parted --script {{ root_device }} resizepart {{ root_partition_number }} 100%
+  register: resize_partition_5
+  when: resize_root_partition | bool
+
+- name: Resize the physical volume
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  ansible.builtin.shell: |
+    pvresize {{ pv_result.stdout }}
+  register: resize_physical_volume
+  when: resize_root_partition | bool
+
+- name: Determine the root logical volume using ansible facts
+  set_fact:
+    root_lv: "{{ item.device }}"
+  loop: "{{ ansible_mounts }}"
+  when: ( item.mount == '/' ) and ( resize_root_partition | bool )
+
+- name: Print the root logical volume
+  debug:
+    msg: "Root device: {{ root_lv }}"
+  when: resize_root_partition | bool
+
+- name: Resize the logical volume and the root filesystem
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  ansible.builtin.shell: |
+    lvextend -l +100%FREE {{ root_lv }} --resizefs
+  register: resize_logical_volume
+  when: resize_root_partition | bool

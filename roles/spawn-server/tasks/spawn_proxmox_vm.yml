@@ -110,3 +110,14 @@
   debug:
     msg: "IPv6 for {{ inventory_hostname }} is {{ server_ipv6 }}"
   when: spawn_on_proxmox | bool
+
+- name: For each host assign vmid as a fact
+  set_fact:
+    vmid: "{{ item.vmid }}"
+  when:
+    - hostvars[item.item.invocation.module_args.name].spawn_on_proxmox | bool
+    - item.vmid is defined
+    - inventory_hostname == item.item.invocation.module_args.name
+  loop: "{{ new_server_info_vm2.results }}"
+
+#     - item.item.invocation.module_args.node is defined

@@ -1,10 +1,12 @@
 ---
 
 # Gather facts
-- name: Gather facts
+- name: Gather network and hardware facts
   delegate_to: "{{ server_ipv4 }}"
   ansible.builtin.setup:
-    gather_subset: network
+    gather_subset:
+      - network
+      - hardware
 
 # Set static IP on host if requested
 - import_tasks: "{{ role_path }}/tasks/static_ip.yml"
@@ -12,6 +14,9 @@
 
 # Establish a SSH connection to the server
 - import_tasks: "{{ role_path }}/tasks/ssh_connect.yml"
+
+# Resize the root partition
+- import_tasks: "{{ role_path }}/tasks/resize_root_partition.yml"
 
 # Perform initial server setup
 - import_tasks: "{{ role_path }}/tasks/setup_server.yml"
