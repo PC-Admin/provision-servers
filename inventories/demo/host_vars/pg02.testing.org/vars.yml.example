@@ -32,6 +32,8 @@ enable_swap: true
 swap_size: "2G"
 ssh_key_file_public: ~/.ssh/somekey_ed25519.pub
 ssh_key_file_private: ~/.ssh/somekey_ed25519
+nameserver_primary: "1.1.1.1"
+nameserver_fallback: "1.0.0.1"
 
 # Proxmox Settings
 spawn_on_proxmox: true
@@ -53,7 +55,6 @@ do_image: "debian-11-x64"
 # Static IP Settings
 set_static_ip: true
 static_ipv4_with_mask: "10.1.1.22/16"
-nameservers: [1.1.1.1, 8.8.8.8]
 
 # Cloudflare Settings
 cloudflare_dns: true
