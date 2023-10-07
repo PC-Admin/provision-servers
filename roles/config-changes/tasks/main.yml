@@ -1,0 +1,51 @@
+---
+
+- name: Fetch current configuration
+  delegate_to: localhost
+  uri:
+    url: "https://{{ hostvars[item].proxmox_host }}:8006/api2/json/nodes/{{ hostvars[item].proxmox_node }}/qemu/{{ hostvars[item].vmid }}/config"
+    headers:
+      Authorization: "PVEAPIToken={{ proxmox_user }}!{{ proxmox_token_id }}={{ proxmox_token_secret }}"
+    validate_certs: no
+  register: current_config
+  loop: "{{ ansible_play_hosts }}"
+  run_once: true
+
+- name: Fetch next boot configuration
+  delegate_to: localhost
+  uri:
+    url: "https://{{ hostvars[item].proxmox_host }}:8006/api2/json/nodes/{{ hostvars[item].proxmox_node }}/qemu/{{ hostvars[item].vmid }}/pending"
+    headers:
+      Authorization: "PVEAPIToken={{ proxmox_user }}!{{ proxmox_token_id }}={{ proxmox_token_secret }}"
+    validate_certs: no
+  register: next_boot_config
+  loop: "{{ ansible_play_hosts }}"
+  run_once: true
+
+- name: Convert next boot config to dictionary
+  set_fact:
+    next_boot_dict: "{{ dict(item.json.data | map(attribute='key') | zip(item.json.data | map(attribute='value'))) }}"
+  loop: "{{ next_boot_config.results }}"
+  register: converted_next_boot_configs
+  run_once: true
+
+- name: Compare configurations
+  set_fact:
+    configs_differ: "{{ (item.0.json.data | default({})) != (item.1.ansible_facts.next_boot_dict | default({})) }}"
+  loop: "{{ current_config.results | zip(converted_next_boot_configs.results) | list }}"
+  register: configs_diff_results
+  run_once: true
+
+- name: Extract VM names and VMIDs of differing configurations
+  set_fact:
+    vms_with_diff_configs: "{{ vms_with_diff_configs | default([]) + [{ 'vmid': item.item[0].url | regex_search('/qemu/(\\d+)/config', '\\1'), 'name': item.item[0].json.data.name }] }}"
+  loop: "{{ configs_diff_results.results }}"
+  when: item.ansible_facts.configs_differ
+  run_once: true
+
+- name: Check for differing Proxmox VM configurations and list them
+  debug:
+    msg: "The configuration for VM {{ item.name }} (VMID {{ item.vmid.0 }}) has changed. Please restart it to apply these changes."
+  loop: "{{ vms_with_diff_configs }}"
+  when: vms_with_diff_configs is defined
+  run_once: true

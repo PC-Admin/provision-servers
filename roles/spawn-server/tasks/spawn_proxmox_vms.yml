@@ -61,9 +61,10 @@
 # - debug:
 #     msg: "api_response: {{ api_response }}"
 
-- name: Sleep 10 seconds
+- name: Sleep for 10 seconds if a VM was just created
   pause:
     seconds: 10
+  when: new_clone_info.changed
   run_once: true
 
 - name: Start the new Proxmox VMs (sequentially)

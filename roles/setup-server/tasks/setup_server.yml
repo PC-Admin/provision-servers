@@ -85,6 +85,7 @@
   become: true
   ansible.builtin.pause:
     seconds: 10
+  when: apt_status.changed
 
 - name: Install necessary packages on target machine
   delegate_to: "{{ server_ipv4_final }}"
