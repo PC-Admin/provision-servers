@@ -51,7 +51,7 @@ To only remove the CloudFlare DNS records, use the `cloudflare-dns` tag:
 `ansible-playbook -v -i inventories/demo/hosts --tags cloudflare-dns remove.yml`
 
 
-# Firewall Configuration
+## Firewall Configuration
 
 The `setup-firewall.yml` playbook can also configure UFW on your servers, to run it:
 
