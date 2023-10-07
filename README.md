@@ -46,9 +46,16 @@ nano group_vars/all
 
 ## Tags
 
-To only remove CloudFlare DNS records, use the `cloudflare-dns` tag:
+To only remove the CloudFlare DNS records, use the `cloudflare-dns` tag:
 
 `ansible-playbook -v -i inventories/demo/hosts --tags cloudflare-dns remove.yml`
+
+
+# Firewall Configuration
+
+The `setup-firewall.yml` playbook can also configure UFW on your servers, to run it:
+
+`ansible-playbook -v -i inventories/demo/hosts setup-firewall.yml`
 
 
 ## License
@@ -70,8 +77,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - create custom systemd machine-id for each Proxmox VM if it differs from the template - DONE
 - Expand VM disk size with: https://docs.ansible.com/ansible/latest/collections/community/general/proxmox_disk_module.html - DONE
 - Allow adjustment of VM resources (CPU, RAM, Ballooning) - DONE
-- Seperate UFW sections into a seperate playbook as it's overkill for some use cases
+- Seperate UFW sections into a seperate playbook as it's overkill for some use cases - DONE
+- Saner DNS advice? (should only display if the playbook isn't setting DNS at all) - DONE
 - Alert the user when unapplied changes are detected in Proxmox hosts (So they can manually restart these hosts)
-- Saner DNS advice? (should only display if the playbook isn't setting DNS at all)
 - Batch testing for playbook changes
 - Cleanup known hosts when deleting servers

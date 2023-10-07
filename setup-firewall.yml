@@ -1,0 +1,8 @@
+
+- name: "Configures UFW rules for each host."
+  hosts: testing_servers
+  gather_facts: false
+
+  roles:
+    - when: ufw_enabled | bool
+      role: PC-Admin.ansible_role_ufw

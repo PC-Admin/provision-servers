@@ -7,5 +7,3 @@
     - spawn-server
     - setup-server
     - print-dns-setup
-    - when: ufw_enabled | bool
-      role: PC-Admin.ansible_role_ufw
