@@ -4,7 +4,7 @@
   delegate_to: "{{ server_ipv4 }}"
   become: true
   ansible.builtin.shell: |
-    echo $(ls /etc/netplan/)
+    basename $(ls /etc/netplan/*.yaml)
   register: netplan_config_file
   when: ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy'
 

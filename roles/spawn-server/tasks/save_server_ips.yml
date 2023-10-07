@@ -4,17 +4,20 @@
 # server_ipv6: "10.1.2.12"
 # static_ipv4_with_mask: "10.1.45.11/16"
 
-- debug:
+- name: "Debug server_ipv4"
+  debug:
+    msg: "IPv4 for {{ inventory_hostname }} is {{ server_ipv4 }}"
+  when: ( server_ipv4 is defined )
+
+- name: "Debug server_ipv6"
+  debug:
+    msg: "IPv6 for {{ inventory_hostname }} is {{ server_ipv6 }}"
+  when: ( server_ipv6 is defined )
+
+- name: Debug static IP if defined
+  debug:
     msg: "{{ static_ipv4_with_mask }}"
   when: ( static_ipv4_with_mask is defined ) and ( set_static_ip | bool )
-
-- debug:
-    msg: "{{ server_ipv4 }}"
-  when: server_ipv4 is defined
-
-- debug:
-    msg: "{{ server_ipv6 }}"
-  when: server_ipv6 is defined
 
 - debug: msg="ERROR - No IP addresses are defined, exiting playbook early..."
   when: ( server_ipv4 | length == 0 ) and ( server_ipv6 | length == 0 )

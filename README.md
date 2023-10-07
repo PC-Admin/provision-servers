@@ -1,11 +1,11 @@
 
 # Ansible Provision Servers
 
-This playbook configures 1 to N servers using either DigitalOcean or a Proxmox cluster, it also adds/removes the DNS records for each server automatically using CloudFlare.
+This playbook configures 1 to N servers using either DigitalOcean or Proxmox, it can also adds/remove the DNS records for each server automatically using CloudFlare.
 
 It also automatically adds new hosts to your known_hosts to allow for an immediate SSH connection, so you can start working sooner!
 
-It was created as a devops tool to help speed up testing.
+It was created as a devops tool to help me speed up testing... although it's gradually becoming a more general tool for deploying servers.
 
 
 ## Prerequisites
@@ -71,14 +71,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Roadmap
 
-- Stop preserving variables in inventory files - DONE
-- Figure out a better (more reliable) SSH hostkey system (should collect hostkey from template?) - DONE
-- add dynamic firewall section for UFW - https://github.com/application-research/haproxy-cluster-playbook/compare/main...PC-Admin:haproxy-cluster-playbook:ufw-changes - DONE
-- create custom systemd machine-id for each Proxmox VM if it differs from the template - DONE
-- Expand VM disk size with: https://docs.ansible.com/ansible/latest/collections/community/general/proxmox_disk_module.html - DONE
-- Allow adjustment of VM resources (CPU, RAM, Ballooning) - DONE
 - Seperate UFW sections into a seperate playbook as it's overkill for some use cases - DONE
 - Saner DNS advice? (should only display if the playbook isn't setting DNS at all) - DONE
+- Update setup-server section, remove non-generic sections
+- Allow setting custom DNS for hosts, if not default to Cloudflare
 - Alert the user when unapplied changes are detected in Proxmox hosts (So they can manually restart these hosts)
-- Batch testing for playbook changes
 - Cleanup known hosts when deleting servers
+- Batch testing for playbook changes

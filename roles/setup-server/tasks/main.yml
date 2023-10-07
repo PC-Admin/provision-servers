@@ -20,3 +20,6 @@
 
 # Perform initial server setup
 - import_tasks: "{{ role_path }}/tasks/setup_server.yml"
+
+# Configure swap file
+- import_tasks: "{{ role_path }}/tasks/swap_file.yml"

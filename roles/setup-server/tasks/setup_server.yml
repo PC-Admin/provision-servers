@@ -6,11 +6,6 @@
   ansible.builtin.command: |
     hostnamectl set-hostname {{ server_url }}
 
-- name: Change server locale
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  shell: update-locale LANG="C.UTF-8"
-
 - name: Get current machine-id
   delegate_to: "{{ server_ipv4_final }}"
   command: cat /etc/machine-id
@@ -22,6 +17,47 @@
   become: true
   shell: echo $(cat /dev/urandom | tr -dc 'a-f0-9' | fold -w 32 | head -n 1) > /etc/machine-id
   when: current_machine_id.stdout == proxmox_template_machine_id
+
+- name: Install systemd-resolved on Debian 11/12 hosts
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  apt:
+    pkg:
+     - systemd-resolved
+  register: apt_status
+  when: ( ansible_facts['distribution_release'] == 'bullseye' ) or ( ansible_facts['distribution_release'] == 'bookworm' )
+  until: apt_status is success
+  delay: 6
+  retries: 10
+
+- name: Configure DNS, set primary nameserver if defined (using /etc/resolved.conf)
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  ansible.builtin.replace:
+    path: /etc/systemd/resolved.conf
+    regexp: '^#?DNS=.*$'
+    replace: 'DNS={{ nameserver_primary | default("1.1.1.1") }}'
+    backup: yes
+  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' or ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm' ) and ( nameserver_primary is defined )
+
+- name: Configure DNS, set fallback nameserver if defined (using /etc/resolved.conf)
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  ansible.builtin.replace:
+    path: /etc/systemd/resolved.conf
+    regexp: '^#?FallbackDNS=.*$'
+    replace: 'FallbackDNS={{ nameserver_fallback | default("1.0.0.1") }}'
+    backup: yes
+  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' or ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm' ) and ( nameserver_fallback is defined )
+
+- name: Configure DNS, restart the systemd-resolved service
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  ansible.builtin.systemd:
+    state: restarted
+    name: systemd-resolved.service
+  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' or ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm' )
+  ignore_errors: true
 
 - name: Update repositories
   delegate_to: "{{ server_ipv4_final }}"
@@ -60,77 +96,12 @@
      - openssl
      - unattended-upgrades
      - apt-listchanges
-     - qemu-guest-agent
   register: apt_status
   until: apt_status is success
   delay: 6
   retries: 10
 
-- name: Ensure /etc/systemd/resolved.conf.d/ directory exists
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  ansible.builtin.file:
-    path: /etc/systemd/resolved.conf.d/
-    state: directory
-    owner: root
-    group: root
-    mode: '0644'
-  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' )
-
-- name: Permanently set DNS to Cloudflare with a new /etc/systemd/resolved.conf.d/ config file
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  ansible.builtin.copy:
-    src: ./roles/setup-server/templates/Cloudflare.conf
-    dest: /etc/systemd/resolved.conf.d/Cloudflare.conf
-    owner: root
-    group: root
-    mode: '0644'
-  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' )
-
-- name: Restart systemd-resolved service
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  ansible.builtin.systemd:
-    state: restarted
-    name: systemd-resolved.service
-  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' )
-  ignore_errors: true
-
-- name: Add ansible package for Ubuntu 20.04 or Ubuntu 22.04 or Debian 11
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  apt:
-    pkg:
-     - ansible
-  when: ( ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy' or ansible_facts['distribution_release'] == 'bullseye' )
-  register: apt_status
-  until: apt_status is success
-  delay: 6
-  retries: 10
-
-- name: Add buster-backports repository into sources list for Debian 10
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  apt_repository:
-    repo: deb http://deb.debian.org/debian buster-backports main
-    state: present
-  when: ( ansible_facts['distribution_release'] == 'buster' )
-
-- name: Add ansible package from backports for Debian 10
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  apt:
-    pkg:
-     - ansible
-    default_release: buster-backports
-  when: ( ansible_facts['distribution_release'] == 'buster' )
-  register: apt_status
-  until: apt_status is success
-  delay: 6
-  retries: 10
-
-- name: Configure unattended-upgrades (1/3)
+- name: Configure unattended-upgrades on Debian 11 and 12 (1/3)
   delegate_to: "{{ server_ipv4_final }}"
   become: true
   lineinfile:
@@ -142,7 +113,7 @@
     mode: '0644'
   when: ( ansible_facts['distribution_release'] == 'bullseye' ) or ( ansible_facts['distribution_release'] == 'bookworm' )
 
-- name: Configure unattended-upgrades (2/3)
+- name: Configure unattended-upgrades on Debian 11 and 12 (2/3)
   delegate_to: "{{ server_ipv4_final }}"
   become: true
   lineinfile:
@@ -154,7 +125,7 @@
     mode: '0644'
   when: ( ansible_facts['distribution_release'] == 'bullseye' ) or ( ansible_facts['distribution_release'] == 'bookworm' )
 
-- name: Configure unattended-upgrades (3/3)
+- name: Configure unattended-upgrades on Debian 11 and 12 (3/3)
   delegate_to: "{{ server_ipv4_final }}"
   become: true
   lineinfile:
@@ -166,7 +137,7 @@
     mode: '0644'
   when: ( ansible_facts['distribution_release'] == 'bullseye' ) or ( ansible_facts['distribution_release'] == 'bookworm' )
 
-- name: Enable unattended-upgrades on Ubuntu 20.04 and Ubuntu 22.04
+- name: Configure unattended-upgrades on Ubuntu 20.04 and 22.04
   delegate_to: "{{ server_ipv4_final }}"
   become: true
   copy:
@@ -176,85 +147,10 @@
     dest: /etc/apt/apt.conf.d/20auto-upgrades
   when: ( ansible_facts['distribution_release'] == 'focal' ) or ( ansible_facts['distribution_release'] == 'jammy' )
 
-- name: Configure unattended-upgrades on Debian 10 and Debian 11
+- name: Enable unattended-upgrades on Ubuntu 20.04 and 22.04
   delegate_to: "{{ server_ipv4_final }}"
   become: true
   template:
     src: ./roles/setup-server/templates/50-unattended-upgrades.j2
     dest: /etc/apt/apt.conf.d/50unattended-upgrades
   when: ( ansible_facts['distribution_release'] == 'focal' ) or ( ansible_facts['distribution_release'] == 'jammy' )
-
-- name: Check if the swapfile exists
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  stat:
-    path: /swapfile
-  when: ( enable_swap | bool )
-  register: swapfile_result
-
-- name: Create swapfile with the right permissions
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  command: 'fallocate -l {{ swap_size }} /swapfile'
-  when: ( enable_swap | bool )
-  register: swapfile_new
-  args:
-    creates: /swapfile
-
-- name: Set correct permissions on swapfile
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  file:
-    path: '/swapfile'
-    owner: root
-    group: root
-    mode: '0600'
-  when: ( enable_swap | bool ) and ( swapfile_result.stat.exists )
-
-- name: Check if swap is enabled
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  command: swapon --show=NAME
-  register: swapfile_check
-  changed_when: false
-
-- name: Make swapfile
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  command: 'mkswap /swapfile'
-  when: ( enable_swap | bool ) and ( not swapfile_result.stat.exists ) and ( "'/swapfile' not in swapfile_check.stdout" )
-
-- name: Enable swapfile
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  command: 'swapon /swapfile'
-  when: ( enable_swap | bool ) and ( "'/swapfile' not in swapfile_check.stdout" )
-  ignore_errors: true
-
-- name: Make swapfile permanent in /etc/fstab
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  mount: name=none
-         src=/swapfile
-         fstype=swap
-         opts=sw
-         passno=0
-         dump=0
-         state=present
-  when: (enable_swap | bool )
-
-- name: Ensure cron is installed
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  apt:
-    name: cron
-    state: present
-
-- name: Creates a crontab entry for trimming systemd logs
-  delegate_to: "{{ server_ipv4_final }}"
-  become: true
-  cron:
-    name: "Trim Systemd Logs"
-    user: root
-    special_time: daily
-    job: "sudo journalctl --vacuum-time=28d"

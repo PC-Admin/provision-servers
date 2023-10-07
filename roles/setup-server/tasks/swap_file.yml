@@ -1,0 +1,60 @@
+---
+
+- name: Check if the swapfile exists
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  stat:
+    path: /swapfile
+  when: ( enable_swap | bool )
+  register: swapfile_result
+
+- name: Create swapfile with the right permissions
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  command: 'fallocate -l {{ swap_size }} /swapfile'
+  when: ( enable_swap | bool )
+  register: swapfile_new
+  args:
+    creates: /swapfile
+
+- name: Set correct permissions on swapfile
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  file:
+    path: '/swapfile'
+    owner: root
+    group: root
+    mode: '0600'
+  when: ( enable_swap | bool ) and ( swapfile_result.stat.exists )
+
+- name: Check if swap is enabled
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  command: swapon --show=NAME
+  register: swapfile_check
+  changed_when: false
+
+- name: Make swapfile
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  command: 'mkswap /swapfile'
+  when: ( enable_swap | bool ) and ( not swapfile_result.stat.exists ) and ( "'/swapfile' not in swapfile_check.stdout" )
+
+- name: Enable swapfile
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  command: 'swapon /swapfile'
+  when: ( enable_swap | bool ) and ( "'/swapfile' not in swapfile_check.stdout" )
+  ignore_errors: true
+
+- name: Make swapfile permanent in /etc/fstab
+  delegate_to: "{{ server_ipv4_final }}"
+  become: true
+  mount: name=none
+         src=/swapfile
+         fstype=swap
+         opts=sw
+         passno=0
+         dump=0
+         state=present
+  when: (enable_swap | bool )
