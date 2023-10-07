@@ -73,8 +73,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 - Seperate UFW sections into a seperate playbook as it's overkill for some use cases - DONE
 - Saner DNS advice? (should only display if the playbook isn't setting DNS at all) - DONE
-- Update setup-server section, remove non-generic sections
-- Allow setting custom DNS for hosts, if not default to Cloudflare
+- Update setup-server section, remove non-generic sections - DONE
+- Allow setting custom DNS for hosts, if not default to Cloudflare - DONE
 - Alert the user when unapplied changes are detected in Proxmox hosts (So they can manually restart these hosts)
 - Cleanup known hosts when deleting servers
 - Batch testing for playbook changes
