@@ -5,7 +5,7 @@
   when: spawn_on_digitalocean | bool
 
 # Spawn a Server
-- import_tasks: "{{ role_path }}/tasks/spawn_proxmox_vm.yml"
+- import_tasks: "{{ role_path }}/tasks/spawn_proxmox_vms.yml"
   when: spawn_on_proxmox | bool
 
 # Save server IPs
@@ -16,4 +16,4 @@
   when: cloudflare_dns | bool
 
 # Configure known hosts
-- import_tasks: "{{ role_path }}/tasks/known_hosts.yml"
+- import_tasks: "{{ role_path }}/tasks/add_known_hosts.yml"

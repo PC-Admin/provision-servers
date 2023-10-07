@@ -14,28 +14,28 @@
     full: true
     state: present
     timeout: 300
-  register: new_server_info_vm
+  register: new_clone_info
   loop: "{{ ansible_play_hosts }}"
   when: proxmox_method == "clone"
   loop_control:
     pause: 1
   run_once: true
 
-- name: "Print each entry from new_server_info_vm.results"
+- name: "Print each entry from new_clone_info.results"
   debug:
     msg: "{{ item }}"
-  with_items: "{{ new_server_info_vm.results }}"
-  when: ( new_server_info_vm is defined ) and ( proxmox_method == "clone" )
+  with_items: "{{ new_clone_info.results }}"
+  when: ( new_clone_info is defined ) and ( proxmox_method == "clone" )
   run_once: true
 
-#- name: "Print the vmid of each entry from new_server_info_vm.results"
+#- name: "Print the vmid of each entry from new_clone_info.results"
 #  debug:
 #    msg:
 #      hostname: "{{ item.item }}"
 #      node: "{{ item.invocation.module_args.node }}"
 #      vmid: "{{ item.vmid }}"
-#  with_items: "{{ new_server_info_vm.results }}"
-#  when: ( new_server_info_vm is defined ) and ( proxmox_method == "clone" )
+#  with_items: "{{ new_clone_info.results }}"
+#  when: ( new_clone_info is defined ) and ( proxmox_method == "clone" )
 #  run_once: true
 #  ignore_errors: true
 
@@ -89,22 +89,22 @@
     vmid: "{{ item.vmid }}"
     node: "{{ proxmox_node }}"
     state: started
-  register: new_server_info_vm2
-  with_items: "{{ new_server_info_vm.results }}"
+  register: new_server_info_started
+  with_items: "{{ new_clone_info.results }}"
   when: proxmox_method == "clone"
   run_once: true
 
-- name: Print stdout of new_server_info_vm2.results
+- name: Print stdout of new_server_info_started.results
   debug:
-    msg: "new_server_info_vm2: {{ item }}"
-  with_items: "{{ new_server_info_vm2.results }}"
+    msg: "new_server_info_started: {{ item }}"
+  with_items: "{{ new_server_info_started.results }}"
   when: proxmox_method == "clone"
   run_once: true
 
-- name: Print stdout of new_server_info_vm2.results
+- name: Print stdout of new_server_info_started.results
   debug:
     msg: "VMID: {{ item.vmid }}, Node: {{ item.invocation.module_args.node }}, Status: {{ item.status }}"
-  with_items: "{{ new_server_info_vm2.results }}"
+  with_items: "{{ new_server_info_started.results }}"
   when: proxmox_method == "clone"
   run_once: true
 
@@ -141,7 +141,7 @@
   command: |
       sudo qm guest cmd {{ item.vmid }} network-get-interfaces
   when: proxmox_method == "clone"
-  with_items: "{{ new_server_info_vm.results }}"
+  with_items: "{{ new_clone_info.results }}"
   until: qemu_guest_info.stderr != qemu_unloaded_status
   loop_control:
     pause: 1
@@ -226,7 +226,7 @@
     mode: '0600'
     state: present
   when: ( proxmox_method == "clone" ) and ( item.1.vmid is defined ) and ( item.1.vmid | string | length > 0 ) 
-  loop: "{{ ansible_play_hosts | zip(new_server_info_vm.results) | list }}"
+  loop: "{{ ansible_play_hosts | zip(new_clone_info.results) | list }}"
   run_once: true
 
 - name: Add vmid line to each hosts inventory file

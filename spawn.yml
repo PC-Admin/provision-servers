@@ -8,4 +8,4 @@
     - setup-server
     - print-dns-setup
     - when: ufw_enabled | bool
-      role: pc_admin.ansible_role_ufw
+      role: PC-Admin.ansible_role_ufw

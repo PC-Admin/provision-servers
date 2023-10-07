@@ -15,7 +15,7 @@ Some packages need to be installed on the ansible controller to provision VMs on
 pip3 install proxmoxer
 pip3 install requests
 ansible-galaxy collection install community.general
-ansible-galaxy install pc_admin.ansible_role_ufw
+ansible-galaxy install PC-Admin.ansible_role_ufw
 ```
 
 
@@ -69,6 +69,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - add dynamic firewall section for UFW - https://github.com/application-research/haproxy-cluster-playbook/compare/main...PC-Admin:haproxy-cluster-playbook:ufw-changes - DONE
 - create custom systemd machine-id for each Proxmox VM if it differs from the template - DONE
 - Expand VM disk size with: https://docs.ansible.com/ansible/latest/collections/community/general/proxmox_disk_module.html - DONE
-- Allow adjustment of VM resources (CPU, RAM)
+- Allow adjustment of VM resources (CPU, RAM, Ballooning) - DONE
+- Seperate UFW sections into a seperate playbook as it's overkill for some use cases
+- Alert the user when unapplied changes are detected in Proxmox hosts (So they can manually restart these hosts)
+- Saner DNS advice? (should only display if the playbook isn't setting DNS at all)
 - Batch testing for playbook changes
-- cleanup known hosts when deleting servers
+- Cleanup known hosts when deleting servers

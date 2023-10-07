@@ -2,3 +2,4 @@
 # Issue DNS advice:
 - import_tasks: "{{ role_path }}/tasks/dns_advice.yml"
   tags: always
+  when: not cloudflare_dns | bool

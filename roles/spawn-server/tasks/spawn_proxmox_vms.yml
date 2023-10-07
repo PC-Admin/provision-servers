@@ -14,18 +14,56 @@
     full: true
     state: present
     timeout: 300
-  register: new_server_info_vm
+  register: new_clone_info
   when: hostvars[item].spawn_on_proxmox | bool
   loop: "{{ ansible_play_hosts }}"
   loop_control:
     pause: 1
   run_once: true
 
-- name: "Print each entry from new_server_info_vm.results"
-  debug:
-    msg: "{{ item }}"
-  with_items: "{{ new_server_info_vm.results }}"
-  when: new_server_info_vm is defined
+# - name: "Print each entry from new_clone_info.results"
+#   debug:
+#     msg: "{{ item }}"
+#   with_items: "{{ new_clone_info.results }}"
+#   when: new_clone_info is defined
+#   run_once: true
+
+- name: Assign VMID as a fact for each host
+  set_fact:
+    vmid: "{{ item.vmid }}"
+  when:
+    - item.vmid is defined
+    - inventory_hostname == item.item
+  loop: "{{ new_clone_info.results }}"
+
+- name: Set VM cores/memory/balloon/shares via the Proxmox API
+  delegate_to: localhost
+  uri:
+    url: "https://{{ hostvars[item].proxmox_host }}:8006/api2/json/nodes/{{ hostvars[item].proxmox_node }}/qemu/{{ hostvars[item].vmid }}/config"
+    method: POST
+    headers:
+      Authorization: "PVEAPIToken={{ proxmox_user }}!{{ proxmox_token_id }}={{ proxmox_token_secret }}"
+    body_format: form-urlencoded
+    body:
+      cores: "{{ hostvars[item].proxmox_kvm_cores | default(omit) }}"
+      memory: "{{ hostvars[item].proxmox_kvm_memory | default(omit) }}"
+      balloon: "{{ hostvars[item].proxmox_kvm_balloon | default(omit) }}"
+      shares: "{{ hostvars[item].proxmox_kvm_shares | default(omit) }}"
+    validate_certs: no  # set this to yes in a production environment if you have valid SSL certs
+  register: api_response
+  when: ( hostvars[item].proxmox_kvm_cores is defined ) and ( hostvars[item].spawn_on_proxmox | bool )
+  loop: "{{ ansible_play_hosts }}"
+  loop_control:
+    pause: 1
+  run_once: true
+
+# This will print the API response for debugging purposes
+# - debug:
+#     msg: "api_response: {{ api_response }}"
+
+- name: Sleep 10 seconds
+  pause:
+    seconds: 10
   run_once: true
 
 - name: Start the new Proxmox VMs (sequentially)
@@ -38,25 +76,25 @@
     vmid: "{{ item.vmid }}"
     node: "{{ proxmox_node }}"
     state: started
-  register: new_server_info_vm2
-  with_items: "{{ new_server_info_vm.results }}"
+  register: new_server_info_started
+  with_items: "{{ new_clone_info.results }}"
   when: item.vmid is defined
   run_once: true
 
-- name: Print stdout of new_server_info_vm2.results
+- name: Print stdout of new_server_info_started.results
   debug:
-    msg: "new_server_info_vm2: {{ item }}"
-  with_items: "{{ new_server_info_vm2.results }}"
+    msg: "new_server_info_started: {{ item }}"
+  with_items: "{{ new_server_info_started.results }}"
   run_once: true
 
-- name: Print stdout of new_server_info_vm2.results
+- name: Print stdout of new_server_info_started.results
   debug:
     msg: "VMID: {{ item.vmid }}, Node: {{ item.item.invocation.module_args.node }}, Status: {{ item.status }}"
   when:
     - item.vmid is defined
     - item.item.invocation.module_args.node is defined
     - item.status is defined
-  with_items: "{{ new_server_info_vm2.results }}"
+  with_items: "{{ new_server_info_started.results }}"
   run_once: true
 
 - name: Set string fact for checking is QEMU is running yet
@@ -69,10 +107,10 @@
   command: |
       sudo qm guest cmd {{ item.vmid }} network-get-interfaces
   when: item.vmid is defined
-  with_items: "{{ new_server_info_vm2.results }}"
+  with_items: "{{ new_server_info_started.results }}"
   until: qemu_guest_info.stderr != qemu_unloaded_status
   loop_control:
-    pause: 1
+    pause: 10
   register: qemu_guest_info
   run_once: true
   ignore_errors: true
@@ -106,18 +144,27 @@
     msg: "IPv4 for {{ inventory_hostname }} is {{ server_ipv4 }}"
   when: spawn_on_proxmox | bool
 
+# This tends to happen on the first run with Debian hosts and it prevents the playbook from completing in 1 clean swoop:
+
+# TASK [spawn-server : Debug server_ipv4] ***************************************************************************************************************************************************************
+# ok: [test1.penholder.xyz] => {
+#     "msg": "IPv4 for test1.penholder.xyz is fe80::a474:21ff:fe25:ccbc"
+# }
+# ok: [test2.penholder.xyz] => {
+#     "msg": "IPv4 for test2.penholder.xyz is 10.1.130.98"
+# }
+
+# If the collected IPv4 is actually an IPv6 address we should exit the playbook!
+
+- name: "Check if the collected IP is actually an IPv6 address"
+  fail:
+    msg: "The collected IP for {{ inventory_hostname }} is actually an IPv6 address, exiting the playbook!"
+  when:
+    - spawn_on_proxmox | bool
+    - server_ipv4 is not match('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$')  # Not a valid IPv4
+    - server_ipv4 is match('^[0-9a-fA-F:]+$')  # Simplified pattern to match IPv6
+
 - name: "Debug server_ipv6"
   debug:
     msg: "IPv6 for {{ inventory_hostname }} is {{ server_ipv6 }}"
   when: spawn_on_proxmox | bool
-
-- name: For each host assign vmid as a fact
-  set_fact:
-    vmid: "{{ item.vmid }}"
-  when:
-    - hostvars[item.item.invocation.module_args.name].spawn_on_proxmox | bool
-    - item.vmid is defined
-    - inventory_hostname == item.item.invocation.module_args.name
-  loop: "{{ new_server_info_vm2.results }}"
-
-#     - item.item.invocation.module_args.node is defined
