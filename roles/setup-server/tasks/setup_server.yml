@@ -1,10 +1,10 @@
 ---
 
-- name: Set server hostname to the Server URL
+- name: Set server hostname to the Server URL subdomain
   delegate_to: "{{ server_ipv4_final }}"
   become: true
   ansible.builtin.command: |
-    hostnamectl set-hostname {{ server_url }}
+    hostnamectl set-hostname {{ server_url.split('.')[0] }}
 
 - name: Get current machine-id
   delegate_to: "{{ server_ipv4_final }}"
