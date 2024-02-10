@@ -77,5 +77,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - Update setup-server section, remove non-generic sections - DONE
 - Allow setting custom DNS for hosts, if not default to Cloudflare - DONE
 - Alert the user when unapplied changes are detected in Proxmox hosts (So they can manually restart these hosts) - DONE
+- Create a list of virtual Proxmox disks for each host. - DONE
 - Cleanup known hosts when deleting servers
 - Batch testing for playbook changes
