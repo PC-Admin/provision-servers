@@ -37,8 +37,17 @@ proxmox_template: "Template Name"
 proxmox_template_host_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDgDGy5XTgAUAD5wyyXatjxca8AO+dM/MJrTUolU5du1 root@template"
 proxmox_template_machine_id: "f8aa2f1ac1e74b1e9a721ace372b1be8"
 proxmox_storage: "Storage Name"
-#proxmox_kvm_cores: 32
-#proxmox_kvm_memory: 32768
+proxmox_kvm_cores: 32
+proxmox_kvm_memory: 32768
+proxmox_kvm_balloon: 2048
+proxmox_kvm_shares: 500
+proxmox_extra_disks:
+- { disk: "scsi1", disk_size: 64, disk_ssd: true, disk_cache: writethrough}
+### Variables for {{ proxmox_extra_disks }}
+### disk - For IDE: 0-3; for SCSI: 0-30; for SATA: 0-5; for VirtIO: 0-15;
+### disk_size - Creates a 64GB disk.
+### disk_ssd - If the disk will appear to be a SSH or HDD.
+### disk_cache - The drive’s cache mode. "none", "writethrough", "writeback", "unsafe", "directsync"
 
 # DigitalOcean Settings
 spawn_on_digitalocean: false

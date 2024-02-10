@@ -12,8 +12,9 @@ It was created as a devops tool to help me speed up testing... although it's gra
 
 Some packages need to be installed on the ansible controller to provision VMs on Proxmox:
 ```
-pip3 install proxmoxer
-pip3 install requests
+pip install jmespath
+pip install proxmoxer
+pip install requests
 ansible-galaxy collection install community.general
 ansible-galaxy install PC-Admin.ansible_role_ufw
 ```

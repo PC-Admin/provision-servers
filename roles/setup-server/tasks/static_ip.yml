@@ -24,6 +24,7 @@
   ansible.builtin.template:
     src: "{{ role_path }}/templates/static_netplan.j2"
     dest: /etc/netplan/{{ netplan_config_file.stdout }}
+    mode: '0600'
   when: ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy'
 
 - name: Apply netplan configuration (Ubuntu)

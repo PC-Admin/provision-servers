@@ -1,0 +1,22 @@
+---
+
+- name: Create the array of new disks on the VM (do not rewrite in case it exists already)
+  delegate_to: localhost
+  community.general.proxmox_disk:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    name: "{{ inventory_hostname }}"
+    backup: false
+    cache: "{{ item.disk_cache }}"
+    disk: "{{ item.disk }}" 
+    format: "qcow2"
+    ssd: "{{ item.disk_ssd }}"
+    storage: "{{ proxmox_storage }}"
+    size: "{{ item.disk_size }}"
+    state: present
+  with_items: "{{ proxmox_extra_disks }}"
+  when: 
+    - spawn_on_proxmox is true
+    - proxmox_extra_disks is defined

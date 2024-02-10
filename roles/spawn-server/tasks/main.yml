@@ -8,6 +8,11 @@
 - import_tasks: "{{ role_path }}/tasks/spawn_proxmox_vms.yml"
   when: spawn_on_proxmox | bool
 
+# Add Proxmox Disks
+- import_tasks: "{{ role_path }}/tasks/add_proxmox_disks.yml"
+  when: spawn_on_proxmox | bool
+  tags: disks
+
 # Save server IPs
 - import_tasks: "{{ role_path }}/tasks/save_server_ips.yml"
 
