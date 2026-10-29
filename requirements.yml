@@ -1,0 +1,12 @@
+---
+
+collections:
+  - name: community.general
+  - name: community.proxmox
+  - name: community.digitalocean
+  - name: ansible.posix
+
+roles:
+  - name: PC-Admin.ansible_role_ufw
+    src: https://github.com/PC-Admin/ansible-role-ufw.git
+    scm: git

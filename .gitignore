@@ -3,3 +3,4 @@ inventories/*/host_vars/*/vars.yml
 inventories/*/hosts
 inventories/*/hosts/test*
 group_vars/all
+.venv

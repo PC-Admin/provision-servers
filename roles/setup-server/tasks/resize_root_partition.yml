@@ -11,7 +11,7 @@
 - name: If pv_resolt.stdout ends in a numeral, remove it to get the root device
   set_fact:
     root_device: "{{ pv_result.stdout | regex_replace('[0-9]+$', '') }}"
-  when: pv_result.stdout | regex_search('[0-9]+$')
+  when: pv_result.stdout is search('[0-9]+$')
 
 - name: Print the root device
   debug:
@@ -49,6 +49,7 @@
     api_user: "{{ proxmox_user }}"
     api_token_id: "{{ proxmox_token_id }}"
     api_token_secret: "{{ proxmox_token_secret }}"
+    validate_certs: no
     vmid: "{{ vmid }}"
     disk: scsi0
     size: "+{{ root_partition_size_to_expand_by }}G"

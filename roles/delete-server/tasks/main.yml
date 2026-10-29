@@ -6,7 +6,7 @@
 
 # Delete Proxmox VM:
 - import_tasks: "{{ role_path }}/tasks/delete_proxmox_vm.yml"
-  when: spawn_on_proxmox | bool
+  when: spawn_on_proxmox in ['clone', 'iso']
 
 # Delete CloudFlare DNS Record:
 - import_tasks: "{{ role_path }}/tasks/delete_cloudflare_dns.yml"

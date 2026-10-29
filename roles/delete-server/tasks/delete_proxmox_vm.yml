@@ -17,6 +17,7 @@
     api_user: "{{ proxmox_user }}"
     api_token_id: "{{ proxmox_token_id }}"
     api_token_secret: "{{ proxmox_token_secret }}"
+    validate_certs: no
     name: "{{ server_url }}"
     node: "{{ proxmox_node }}"
     force: true
@@ -35,6 +36,7 @@
     api_user: "{{ proxmox_user }}"
     api_token_id: "{{ proxmox_token_id }}"
     api_token_secret: "{{ proxmox_token_secret }}"
+    validate_certs: no
     node: "{{ proxmox_node }}"
     type: qemu
     vmid: "{{ old_server_info.vmid }}"
@@ -70,6 +72,7 @@
     api_user: "{{ proxmox_user }}"
     api_token_id: "{{ proxmox_token_id }}"
     api_token_secret: "{{ proxmox_token_secret }}"
+    validate_certs: no
     name: "{{ server_url }}"
     node: "{{ proxmox_node }}"
     state: absent

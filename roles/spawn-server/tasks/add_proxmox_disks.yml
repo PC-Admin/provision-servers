@@ -7,6 +7,7 @@
     api_user: "{{ proxmox_user }}"
     api_token_id: "{{ proxmox_token_id }}"
     api_token_secret: "{{ proxmox_token_secret }}"
+    validate_certs: no
     name: "{{ inventory_hostname }}"
     backup: false
     cache: "{{ item.disk_cache }}"
@@ -18,5 +19,5 @@
     state: present
   with_items: "{{ proxmox_extra_disks }}"
   when: 
-    - spawn_on_proxmox is true
+    - spawn_on_proxmox in ['clone', 'iso']
     - proxmox_extra_disks is defined
