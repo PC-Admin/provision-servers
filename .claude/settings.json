@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(/group_vars/all)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "excludedCommands": [
+      "ansible-playbook *"
+    ]
+  }
+}
