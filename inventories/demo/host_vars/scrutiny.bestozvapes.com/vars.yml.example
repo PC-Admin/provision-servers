@@ -1,0 +1,93 @@
+
+# DigitalOcean Regions:
+# New York City (USA) = nyc1, nyc3
+# San Francisco (USA) = sfo3
+# Amsterdam (NLD) = ams3
+# Frankfurt (DEU) = fra1
+# Singapore (SGP) = sgp1
+# London (GBR) = lon1
+# Toronto (CAN) = tor1
+# Balgalore (IND) = blr1
+
+# DigitalOcean Droplet Sizes:
+# s-1vcpu-2gb
+# s-2vcpu-4gb
+# s-4vcpu-8gb
+# s-8vcpu-16gb
+# so-8vcpu-64gb
+# so-16vcpu-128gb
+# so-24vcpu-192gb
+# so-32vcpu-256gb
+
+# DigitalOcean Images:
+# Debian	12 x64	debian-12-x64
+# Ubuntu	22.04 (LTS) x64	ubuntu-22-04-x64
+
+# Proxmox Provisioning Modes (spawn_on_proxmox):
+# 'clone' = Full clone of proxmox_template
+# 'iso'   = Fresh Debian install from proxmox_iso, see docs/proxmox_iso_installs.md
+# false   = Don't spawn on Proxmox
+
+# Server Settings
+server_url: scrutiny.bestozvapes.com
+server_subdomains: [ 'scrutiny']
+enable_swap: true
+swap_size: "2G"
+ssh_key_file_public: ~/.ssh/somekey_ed25519.pub
+ssh_key_file_private: ~/.ssh/somekey_ed25519
+nameserver_primary: "1.1.1.1"
+nameserver_fallback: "1.0.0.1"
+
+# Proxmox Settings
+spawn_on_proxmox: 'iso'
+proxmox_host: "10.1.1.50"
+proxmox_node: "proxmox-host"
+#proxmox_template: "Template Name"
+#proxmox_template_host_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDgDGy5XTgAUAD5wyyXatjxca8AO+dM/MJrTUolU5du1 root@template"
+#proxmox_template_machine_id: "f8aa2f1ac1e74b1e9a721ace372b1be8"
+proxmox_iso_storage: "Storage Name"
+proxmox_iso: "debian-13.7.0-amd64-netinst.iso"
+proxmox_root_disk_size: 32
+proxmox_storage: "Storage Name"
+proxmox_kvm_cores: 4
+proxmox_kvm_memory: 8192
+proxmox_kvm_balloon: 2048
+proxmox_kvm_shares: 500
+#proxmox_extra_disks:
+#- { disk: "scsi1", disk_size: 64, disk_ssd: false, disk_cache: writethrough}
+#- { disk: "scsi2", disk_size: 64, disk_ssd: false, disk_cache: writethrough}
+### Variables for {{ proxmox_extra_disks }}
+### disk - For IDE: 0-3; for SCSI: 0-30; for SATA: 0-5; for VirtIO: 0-15;
+### disk_size - Creates a 64GB disk.
+### disk_ssd - If the disk will appear to be a SSH or HDD.
+### disk_cache - The drive’s cache mode. "none", "writethrough", "writeback", "unsafe", "directsync"
+
+# DigitalOcean Settings
+spawn_on_digitalocean: false
+do_droplet_region: sgp1
+new_slug_size: s-1vcpu-2gb
+do_image: ubuntu-22-04-x64
+
+# Static IP Settings
+set_static_ip: true
+static_ipv4_with_mask: "10.1.50.50/16"
+
+# Cloudflare Settings
+cloudflare_dns: true
+cloudflare_email: you@example.com
+cloudflare_zone_name: bestozvapes.com
+
+# UFW Settings
+ufw_enabled: false
+ufw_allow_dict:
+  - { rule: 'allow', port: 22, proto: 'tcp', from_ip: any, insert_relative_to: 'first-ipv4' }
+  - { rule: 'allow', port: 443, proto: 'any', from_ip: 'any', insert_relative_to: 'last-ipv4' }
+  - { rule: 'allow', port: 80, proto: 'tcp', from_ip: 'any', insert_relative_to: 'last-ipv4' }
+  - { rule: 'allow', port: 8443, proto: 'any', from_ip: 10.24.0.0/16, insert_relative_to: 'last-ipv4' }
+  - { rule: 'allow', port: 8443, proto: 'any', from_ip: 10.25.2.0/24, insert_relative_to: 'last-ipv4' }
+  - { rule: 'allow', port: 51432, proto: 'any', from_ip: 10.24.0.0/16, insert_relative_to: 'last-ipv4' }
+  - { rule: 'allow', port: 51432, proto: 'any', from_ip: 10.25.2.0/24, insert_relative_to: 'last-ipv4' }
+  - { rule: 'allow', port: 9345, proto: 'any', from_ip: 10.24.0.0/16, insert_relative_to: 'last-ipv4' }
+  - { rule: 'allow', port: 9345, proto: 'any', from_ip: 10.25.2.0/24, insert_relative_to: 'last-ipv4' }
+  - { rule: 'allow', port: 443, proto: 'any', from_ip: 'any', insert_relative_to: 'first-ipv6' }
+  - { rule: 'allow', port: 80, proto: 'tcp', from_ip: 'any', insert_relative_to: 'last-ipv6' }

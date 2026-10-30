@@ -3,6 +3,13 @@
   hosts: testing_servers
   gather_facts: false
 
+  module_defaults:
+    group/community.proxmox.proxmox:
+      api_user: "{{ proxmox_user }}"
+      api_token_id: "{{ proxmox_token_id }}"
+      api_token_secret: "{{ proxmox_token_secret }}"
+      validate_certs: no
+
   roles:
     - delete-server
 

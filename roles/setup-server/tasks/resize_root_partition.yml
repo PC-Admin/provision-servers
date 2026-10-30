@@ -44,12 +44,8 @@
 
 - name: Resize the root disk
   delegate_to: localhost
-  community.general.proxmox_disk:
+  community.proxmox.proxmox_disk:
     api_host: "{{ proxmox_host }}"
-    api_user: "{{ proxmox_user }}"
-    api_token_id: "{{ proxmox_token_id }}"
-    api_token_secret: "{{ proxmox_token_secret }}"
-    validate_certs: no
     vmid: "{{ vmid }}"
     disk: scsi0
     size: "+{{ root_partition_size_to_expand_by }}G"

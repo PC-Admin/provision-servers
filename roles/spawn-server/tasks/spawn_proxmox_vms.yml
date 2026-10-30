@@ -2,12 +2,8 @@
 
 - name: "Create a full clone of the template for each host (sequentially)"
   delegate_to: localhost
-  community.general.proxmox_kvm:
+  community.proxmox.proxmox_kvm:
     api_host: "{{ hostvars[item].proxmox_host }}"
-    api_user: "{{ proxmox_user }}"
-    api_token_id: "{{ proxmox_token_id }}"
-    api_token_secret: "{{ proxmox_token_secret }}"
-    validate_certs: no
     name: "{{ hostvars[item].inventory_hostname }}"
     node: "{{ hostvars[item].proxmox_node }}"
     clone: "{{ hostvars[item].proxmox_template }}"
@@ -70,12 +66,8 @@
 
 - name: Start the new Proxmox VMs (sequentially)
   delegate_to: localhost
-  community.general.proxmox_kvm:
+  community.proxmox.proxmox_kvm:
     api_host: "{{ proxmox_host }}"
-    api_user: "{{ proxmox_user }}"
-    api_token_id: "{{ proxmox_token_id }}"
-    api_token_secret: "{{ proxmox_token_secret }}"
-    validate_certs: no
     vmid: "{{ hostvars[item].vmid }}"
     node: "{{ hostvars[item].proxmox_node }}"
     state: started

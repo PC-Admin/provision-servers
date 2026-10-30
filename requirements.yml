@@ -2,11 +2,16 @@
 
 collections:
   - name: community.general
+    version: ">=13.5.0,<14.0.0"
   - name: community.proxmox
+    version: ">=2.1.0,<3.0.0"
   - name: community.digitalocean
+    version: ">=1.27.0,<2.0.0"
   - name: ansible.posix
+    version: ">=2.2.2,<3.0.0"
 
 roles:
   - name: PC-Admin.ansible_role_ufw
     src: https://github.com/PC-Admin/ansible-role-ufw.git
     scm: git
+    version: 8caadc3aeb6377d757f446401141748a85f57272

@@ -4,12 +4,8 @@
 # so VMs get at least 2GB during the install, it's set back to proxmox_kvm_memory afterwards
 - name: "Create a new VM with the ISO image attached for each host (sequentially)"
   delegate_to: localhost
-  community.general.proxmox_kvm:
+  community.proxmox.proxmox_kvm:
     api_host: "{{ hostvars[item].proxmox_host }}"
-    api_user: "{{ proxmox_user }}"
-    api_token_id: "{{ proxmox_token_id }}"
-    api_token_secret: "{{ proxmox_token_secret }}"
-    validate_certs: no
     name: "{{ hostvars[item].inventory_hostname }}"
     node: "{{ hostvars[item].proxmox_node }}"
     cores: "{{ hostvars[item].proxmox_kvm_cores | default(omit) }}"
@@ -46,138 +42,119 @@
     - inventory_hostname == item.item
   loop: "{{ new_iso_vm_info.results }}"
 
-- name: Record the public SSH key into a variable
-  set_fact:
-    public_ssh_key: "{{ lookup( 'file', ssh_key_file_public ) }}"
+- name: Install Debian on the new Proxmox VMs from the ISO image
   when: iso_install_required | bool
+  block:
 
-- name: Generate a random root password hash for the installer (root logs in with the SSH key)
-  delegate_to: localhost
-  ansible.builtin.shell: |
-    openssl passwd -6 "$(openssl rand -hex 32)"
-  register: root_password_hash
-  changed_when: false
-  when: iso_install_required | bool
+    - name: Record the public SSH key into a variable
+      set_fact:
+        public_ssh_key: "{{ lookup( 'file', ssh_key_file_public ) }}"
 
-- name: Create a temporary working directory for the installer on the Proxmox host
-  delegate_to: "{{ proxmox_node }}"
-  become: true
-  ansible.builtin.tempfile:
-    state: directory
-    suffix: "-{{ inventory_hostname }}"
-  register: iso_install_dir
-  when: iso_install_required | bool
+    - name: Generate a random root password hash for the installer (root logs in with the SSH key)
+      delegate_to: localhost
+      ansible.builtin.shell: |
+        openssl passwd -6 "$(openssl rand -hex 32)"
+      register: root_password_hash
+      changed_when: false
 
-- name: Collect the path of the ISO image on the Proxmox host
-  delegate_to: "{{ proxmox_node }}"
-  become: true
-  command: |
-    pvesm path {{ proxmox_iso_storage }}:iso/{{ proxmox_iso }}
-  register: iso_path
-  changed_when: false
-  when: iso_install_required | bool
+    - name: Create a temporary working directory for the installer on the Proxmox host
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: "-{{ inventory_hostname }}"
+      register: iso_install_dir
 
-- name: Mount the ISO image on the Proxmox host
-  delegate_to: "{{ proxmox_node }}"
-  become: true
-  ansible.posix.mount:
-    path: "{{ iso_install_dir.path }}/iso"
-    src: "{{ iso_path.stdout }}"
-    fstype: iso9660
-    opts: loop,ro
-    state: ephemeral
-  when: iso_install_required | bool
+    - name: Collect the path of the ISO image on the Proxmox host
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      command: |
+        pvesm path {{ proxmox_iso_storage }}:iso/{{ proxmox_iso }}
+      register: iso_path
+      changed_when: false
 
-- name: Copy the installer kernel and initrd out of the ISO image
-  delegate_to: "{{ proxmox_node }}"
-  become: true
-  copy:
-    src: "{{ iso_install_dir.path }}/iso/install.amd/{{ item }}"
-    dest: "{{ iso_install_dir.path }}/{{ item }}"
-    remote_src: true
-  with_items:
-    - vmlinuz
-    - initrd.gz
-  when: iso_install_required | bool
+    - name: Mount the ISO image on the Proxmox host
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      ansible.posix.mount:
+        path: "{{ iso_install_dir.path }}/iso"
+        src: "{{ iso_path.stdout }}"
+        fstype: iso9660
+        opts: loop,ro
+        state: ephemeral
 
-- name: Unmount the ISO image on the Proxmox host
-  delegate_to: "{{ proxmox_node }}"
-  become: true
-  ansible.posix.mount:
-    path: "{{ iso_install_dir.path }}/iso"
-    state: unmounted
-  when: iso_install_required | bool
+    - name: Copy the installer kernel and initrd out of the ISO image
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      copy:
+        src: "{{ iso_install_dir.path }}/iso/install.amd/{{ item }}"
+        dest: "{{ iso_install_dir.path }}/{{ item }}"
+        remote_src: true
+      with_items:
+        - vmlinuz
+        - initrd.gz
 
-- name: Generate the preseed file for the Debian installer
-  delegate_to: "{{ proxmox_node }}"
-  become: true
-  template:
-    src: "{{ role_path }}/templates/preseed.cfg.j2"
-    dest: "{{ iso_install_dir.path }}/preseed.cfg"
-    mode: '0600'
-  when: iso_install_required | bool
+    - name: Generate the preseed file for the Debian installer
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      template:
+        src: "{{ role_path }}/templates/preseed.cfg.j2"
+        dest: "{{ iso_install_dir.path }}/preseed.cfg"
+        mode: '0600'
 
-- name: Add the preseed file to the installers initrd
-  delegate_to: "{{ proxmox_node }}"
-  become: true
-  ansible.builtin.shell: |
-    set -e
-    gunzip initrd.gz
-    echo preseed.cfg | cpio --quiet -H newc -o -A -F initrd
-    gzip initrd
-  args:
-    chdir: "{{ iso_install_dir.path }}"
-  when: iso_install_required | bool
+    - name: Add the preseed file to the installers initrd
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      ansible.builtin.shell: |
+        set -e
+        gunzip initrd.gz
+        echo preseed.cfg | cpio --quiet -H newc -o -A -F initrd
+        gzip initrd
+      args:
+        chdir: "{{ iso_install_dir.path }}"
 
-# The Proxmox API won't let a token set 'args', so this is done as root on the Proxmox host
-- name: Boot the VM from the installers kernel and initrd
-  delegate_to: "{{ proxmox_node }}"
-  become: true
-  command: |
-    qm set {{ vmid }} --args "-kernel {{ iso_install_dir.path }}/vmlinuz -initrd {{ iso_install_dir.path }}/initrd.gz -append 'priority=critical'"
-  when: iso_install_required | bool
+    # The Proxmox API won't let a token set 'args', so this is done as root on the Proxmox host
+    - name: Boot the VM from the installers kernel and initrd
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      command: |
+        qm set {{ vmid }} --args "-kernel {{ iso_install_dir.path }}/vmlinuz -initrd {{ iso_install_dir.path }}/initrd.gz -append 'priority=critical'"
 
-- name: Start the Debian installer on the new Proxmox VMs
-  delegate_to: localhost
-  community.general.proxmox_kvm:
-    api_host: "{{ proxmox_host }}"
-    api_user: "{{ proxmox_user }}"
-    api_token_id: "{{ proxmox_token_id }}"
-    api_token_secret: "{{ proxmox_token_secret }}"
-    validate_certs: no
-    vmid: "{{ vmid }}"
-    node: "{{ proxmox_node }}"
-    state: started
-  when: iso_install_required | bool
+    - name: Start the Debian installer on the new Proxmox VMs
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      command: |
+        qm start {{ vmid }}
 
-- name: Wait for the installer to finish and power off the VM (for up to 30 minutes)
-  delegate_to: localhost
-  community.general.proxmox_vm_info:
-    api_host: "{{ proxmox_host }}"
-    api_user: "{{ proxmox_user }}"
-    api_token_id: "{{ proxmox_token_id }}"
-    api_token_secret: "{{ proxmox_token_secret }}"
-    validate_certs: no
-    node: "{{ proxmox_node }}"
-    type: qemu
-    vmid: "{{ vmid }}"
-  register: iso_vm_info
-  until: ( iso_vm_info.proxmox_vms | default([]) | length > 0 ) and ( iso_vm_info.proxmox_vms[0].status == 'stopped' )
-  retries: 120
-  delay: 15
-  when: iso_install_required | bool
+    - name: Wait for the installer to finish and power off the VM (for up to 30 minutes)
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      command: |
+        qm wait {{ vmid }} --timeout 1800
+      async: 1860
+      poll: 15
 
-- name: Remove the installer from the VM, eject the ISO image and set the memory back
-  delegate_to: "{{ proxmox_node }}"
-  become: true
-  command: |
-    qm set {{ vmid }} --delete args --ide2 none,media=cdrom --memory {{ proxmox_kvm_memory | default(2048) }}
-  when: iso_install_required | bool
+    - name: Remove the installer from the VM, eject the ISO image and set the memory back
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      command: |
+        qm set {{ vmid }} --delete args --ide2 none,media=cdrom --memory {{ proxmox_kvm_memory | default(2048) }}
 
-- name: Remove the temporary working directory from the Proxmox host
-  delegate_to: "{{ proxmox_node }}"
-  become: true
-  file:
-    path: "{{ iso_install_dir.path }}"
-    state: absent
-  when: iso_install_required | bool
+  # Clean up the Proxmox host even if the install fails
+  always:
+
+    - name: Unmount the ISO image on the Proxmox host
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      ansible.posix.mount:
+        path: "{{ iso_install_dir.path }}/iso"
+        state: unmounted
+      when: iso_install_dir.path is defined
+
+    - name: Remove the temporary working directory from the Proxmox host
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      file:
+        path: "{{ iso_install_dir.path }}"
+        state: absent
+      when: iso_install_dir.path is defined

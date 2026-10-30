@@ -41,7 +41,7 @@
     path: /etc/network/interfaces
     regexp: '^iface {{ ansible_default_ipv4.interface }} inet dhcp'
     line: '#iface {{ ansible_default_ipv4.interface }} inet dhcp'
-  when: ansible_facts['distribution_release'] == 'bookworm' or ansible_facts['distribution_release'] == 'trixie'
+  when: ansible_facts['distribution_release'] in ['bookworm', 'trixie']
 
 - name: Set static IP (Debian) 2/2
   delegate_to: "{{ server_ipv4 }}"
@@ -54,7 +54,7 @@
         address {{ static_ipv4_with_mask.split('/')[0] }}
         netmask {{ ansible_default_ipv4.netmask }}
         gateway {{ ansible_default_ipv4.gateway }}
-  when: ansible_facts['distribution_release'] == 'bookworm' or ansible_facts['distribution_release'] == 'trixie'
+  when: ansible_facts['distribution_release'] in ['bookworm', 'trixie']
 
 - name: Apply the new networking configuration (Debian)
   delegate_to: "{{ server_ipv4 }}"
@@ -63,4 +63,4 @@
     nohup bash -c 'sleep 5 && systemctl restart networking' &
   async: 10
   poll: 0
-  when: ansible_facts['distribution_release'] == 'bookworm' or ansible_facts['distribution_release'] == 'trixie'
+  when: ansible_facts['distribution_release'] in ['bookworm', 'trixie']

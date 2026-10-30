@@ -1,5 +1,3 @@
 
 [testing_servers]
-matrix.testing.org ansible_ssh_user=root
-pg01.testing.org ansible_ssh_user=root
-pg02.testing.org ansible_ssh_user=root
+scrutiny.bestozvapes.com ansible_ssh_user=root
