@@ -38,13 +38,13 @@
   delegate_to: "{{ server_ipv4_final }}"
   become: true
   command: 'mkswap /swapfile'
-  when: ( enable_swap | bool ) and ( not swapfile_result.stat.exists ) and ( "'/swapfile' not in swapfile_check.stdout" )
+  when: ( enable_swap | bool ) and ( not swapfile_result.stat.exists ) and ( '/swapfile' not in swapfile_check.stdout )
 
 - name: Enable swapfile
   delegate_to: "{{ server_ipv4_final }}"
   become: true
   command: 'swapon /swapfile'
-  when: ( enable_swap | bool ) and ( "'/swapfile' not in swapfile_check.stdout" )
+  when: ( enable_swap | bool ) and ( '/swapfile' not in swapfile_check.stdout )
   ignore_errors: true
 
 - name: Make swapfile permanent in /etc/fstab

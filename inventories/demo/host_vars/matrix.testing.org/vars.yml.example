@@ -19,6 +19,15 @@
 # so-24vcpu-192gb
 # so-32vcpu-256gb
 
+# DigitalOcean Images:
+# Debian	12 x64	debian-12-x64
+# Ubuntu	22.04 (LTS) x64	ubuntu-22-04-x64
+
+# Proxmox Provisioning Modes (spawn_on_proxmox):
+# 'clone' = Full clone of proxmox_template
+# 'iso'   = Fresh Debian install from proxmox_iso, see docs/proxmox_iso_installs.md
+# false   = Don't spawn on Proxmox
+
 # Server Settings
 server_url: matrix.testing.org
 server_subdomains: [ 'matrix' ]
@@ -30,12 +39,13 @@ nameserver_primary: "1.1.1.1"
 nameserver_fallback: "1.0.0.1"
 
 # Proxmox Settings
-spawn_on_proxmox: true
+spawn_on_proxmox: 'clone'
 proxmox_host: "10.1.1.50"
 proxmox_node: "proxmox-host"
 proxmox_template: "Template Name"
 proxmox_template_host_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDgDGy5XTgAUAD5wyyXatjxca8AO+dM/MJrTUolU5du1 root@template"
 proxmox_template_machine_id: "f8aa2f1ac1e74b1e9a721ace372b1be8"
+proxmox_root_disk_size: 32
 proxmox_storage: "Storage Name"
 proxmox_kvm_cores: 32
 proxmox_kvm_memory: 32768
@@ -53,7 +63,7 @@ proxmox_extra_disks:
 spawn_on_digitalocean: false
 do_droplet_region: blr1
 new_slug_size: "s-2vcpu-4gb"
-do_image: "debian-11-x64"
+do_image: "debian-12-x64"
 
 # Static IP Settings
 set_static_ip: true
@@ -61,7 +71,7 @@ static_ipv4_with_mask: "10.1.1.20/16"
 
 # Cloudflare Settings
 cloudflare_dns: true
-cloudflare_email: michael@perthchat.org
+cloudflare_email: you@example.com
 cloudflare_zone_name: testing.org
 
 # UFW Settings

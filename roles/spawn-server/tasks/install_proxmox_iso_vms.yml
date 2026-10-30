@@ -1,0 +1,160 @@
+---
+
+# The Debian installer drops into "low memory mode" and stops to say so with less than 2GB of RAM,
+# so VMs get at least 2GB during the install, it's set back to proxmox_kvm_memory afterwards
+- name: "Create a new VM with the ISO image attached for each host (sequentially)"
+  delegate_to: localhost
+  community.proxmox.proxmox_kvm:
+    api_host: "{{ hostvars[item].proxmox_host }}"
+    name: "{{ hostvars[item].inventory_hostname }}"
+    node: "{{ hostvars[item].proxmox_node }}"
+    cores: "{{ hostvars[item].proxmox_kvm_cores | default(omit) }}"
+    memory: "{{ [ hostvars[item].proxmox_kvm_memory | default(2048) | int, 2048 ] | max }}"
+    balloon: "{{ hostvars[item].proxmox_kvm_balloon | default(omit) }}"
+    shares: "{{ hostvars[item].proxmox_kvm_shares | default(omit) }}"
+    cpu: x86-64-v2-AES
+    ostype: l26
+    agent: '1'
+    scsihw: virtio-scsi-single
+    scsi:
+      scsi0: "{{ hostvars[item].proxmox_storage }}:{{ hostvars[item].proxmox_root_disk_size }},format=qcow2,iothread=1"
+    ide:
+      ide2: "{{ hostvars[item].proxmox_iso_storage }}:iso/{{ hostvars[item].proxmox_iso }},media=cdrom"
+    net:
+      net0: "virtio,bridge=vmbr0,firewall=1"
+    boot: "order=scsi0"
+    state: present
+    timeout: 300
+  register: new_iso_vm_info
+  when: hostvars[item].spawn_on_proxmox == 'iso'
+  loop: "{{ ansible_play_hosts }}"
+  loop_control:
+    pause: 1
+  run_once: true
+
+# Only VMs that were just created get the OS installed, so re-running the playbook never reinstalls a VM
+- name: Assign VMID as a fact for each host
+  set_fact:
+    vmid: "{{ item.vmid }}"
+    iso_install_required: "{{ item.changed }}"
+  when:
+    - item.vmid is defined
+    - inventory_hostname == item.item
+  loop: "{{ new_iso_vm_info.results }}"
+
+- name: Install Debian on the new Proxmox VMs from the ISO image
+  when: iso_install_required | bool
+  block:
+
+    - name: Record the public SSH key into a variable
+      set_fact:
+        public_ssh_key: "{{ lookup( 'file', ssh_key_file_public ) }}"
+
+    - name: Generate a random root password hash for the installer (root logs in with the SSH key)
+      delegate_to: localhost
+      ansible.builtin.shell: |
+        openssl passwd -6 "$(openssl rand -hex 32)"
+      register: root_password_hash
+      changed_when: false
+
+    - name: Create a temporary working directory for the installer on the Proxmox host
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: "-{{ inventory_hostname }}"
+      register: iso_install_dir
+
+    - name: Collect the path of the ISO image on the Proxmox host
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      command: |
+        pvesm path {{ proxmox_iso_storage }}:iso/{{ proxmox_iso }}
+      register: iso_path
+      changed_when: false
+
+    - name: Mount the ISO image on the Proxmox host
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      ansible.posix.mount:
+        path: "{{ iso_install_dir.path }}/iso"
+        src: "{{ iso_path.stdout }}"
+        fstype: iso9660
+        opts: loop,ro
+        state: ephemeral
+
+    - name: Copy the installer kernel and initrd out of the ISO image
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      copy:
+        src: "{{ iso_install_dir.path }}/iso/install.amd/{{ item }}"
+        dest: "{{ iso_install_dir.path }}/{{ item }}"
+        remote_src: true
+      with_items:
+        - vmlinuz
+        - initrd.gz
+
+    - name: Generate the preseed file for the Debian installer
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      template:
+        src: "{{ role_path }}/templates/preseed.cfg.j2"
+        dest: "{{ iso_install_dir.path }}/preseed.cfg"
+        mode: '0600'
+
+    - name: Add the preseed file to the installers initrd
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      ansible.builtin.shell: |
+        set -e
+        gunzip initrd.gz
+        echo preseed.cfg | cpio --quiet -H newc -o -A -F initrd
+        gzip initrd
+      args:
+        chdir: "{{ iso_install_dir.path }}"
+
+    # The Proxmox API won't let a token set 'args', so this is done as root on the Proxmox host
+    - name: Boot the VM from the installers kernel and initrd
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      command: |
+        qm set {{ vmid }} --args "-kernel {{ iso_install_dir.path }}/vmlinuz -initrd {{ iso_install_dir.path }}/initrd.gz -append 'priority=critical'"
+
+    - name: Start the Debian installer on the new Proxmox VMs
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      command: |
+        qm start {{ vmid }}
+
+    - name: Wait for the installer to finish and power off the VM (for up to 30 minutes)
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      command: |
+        qm wait {{ vmid }} --timeout 1800
+      async: 1860
+      poll: 15
+
+    - name: Remove the installer from the VM, eject the ISO image and set the memory back
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      command: |
+        qm set {{ vmid }} --delete args --ide2 none,media=cdrom --memory {{ proxmox_kvm_memory | default(2048) }}
+
+  # Clean up the Proxmox host even if the install fails
+  always:
+
+    - name: Unmount the ISO image on the Proxmox host
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      ansible.posix.mount:
+        path: "{{ iso_install_dir.path }}/iso"
+        state: unmounted
+      when: iso_install_dir.path is defined
+
+    - name: Remove the temporary working directory from the Proxmox host
+      delegate_to: "{{ proxmox_node }}"
+      become: true
+      file:
+        path: "{{ iso_install_dir.path }}"
+        state: absent
+      when: iso_install_dir.path is defined

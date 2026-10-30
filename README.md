@@ -1,7 +1,7 @@
 
 # Ansible Provision Servers
 
-This playbook configures 1 to N servers using either DigitalOcean or Proxmox, it can also adds/remove the DNS records for each server automatically using CloudFlare.
+This playbook configures 1 to N servers using either DigitalOcean or Proxmox (cloned from a template or installed from an ISO image), it can also adds/remove the DNS records for each server automatically using CloudFlare.
 
 It also automatically adds new hosts to your known_hosts to allow for an immediate SSH connection, so you can start working sooner!
 
@@ -10,19 +10,35 @@ It was created as a devops tool to help me speed up testing... although it's gra
 
 ## Prerequisites
 
-Some packages need to be installed on the ansible controller to provision VMs on Proxmox:
+Ansible and the packages this playbook needs are installed into a Python virtual environment (venv). On Debian/Ubuntu creating a venv needs the `python3-venv` package:
 ```
-pip install jmespath
-pip install proxmoxer
-pip install requests
-ansible-galaxy collection install community.general
-ansible-galaxy install PC-Admin.ansible_role_ufw
+sudo apt install python3-venv
+```
+
+Create the venv and install everything into it (only needed once):
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+ansible-galaxy install -r requirements.yml
+```
+
+The Galaxy collections and roles are installed into `.venv` as well (see [ansible.cfg](ansible.cfg)).
+
+Load the venv each time you open a new terminal to use this playbook:
+```
+source .venv/bin/activate
 ```
 
 
 ## Prepare Proxmox Templates
 
 For creating Proxmox templates to use with this playbook, see [docs/create_proxmox_templates.md](docs/create_proxmox_templates.md).
+
+
+## Prepare Proxmox ISO Installs
+
+Proxmox VMs can also be installed fresh from a Debian ISO image instead of being cloned from a template, see [docs/proxmox_iso_installs.md](docs/proxmox_iso_installs.md).
 
 
 ## Setup Servers

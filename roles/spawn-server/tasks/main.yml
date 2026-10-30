@@ -4,13 +4,17 @@
 - import_tasks: "{{ role_path }}/tasks/spawn_do_droplet.yml"
   when: spawn_on_digitalocean | bool
 
+# Install a Server from an ISO image
+- import_tasks: "{{ role_path }}/tasks/install_proxmox_iso_vms.yml"
+  when: spawn_on_proxmox == 'iso'
+
 # Spawn a Server
 - import_tasks: "{{ role_path }}/tasks/spawn_proxmox_vms.yml"
-  when: spawn_on_proxmox | bool
+  when: spawn_on_proxmox in ['clone', 'iso']
 
 # Add Proxmox Disks
 - import_tasks: "{{ role_path }}/tasks/add_proxmox_disks.yml"
-  when: spawn_on_proxmox | bool
+  when: spawn_on_proxmox in ['clone', 'iso']
   tags: disks
 
 # Save server IPs

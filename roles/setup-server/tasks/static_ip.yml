@@ -6,7 +6,7 @@
   ansible.builtin.shell: |
     basename $(ls /etc/netplan/*.yaml)
   register: netplan_config_file
-  when: ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy'
+  when: ansible_facts['distribution_release'] == 'jammy'
 
 - name: Backup current netplan configuration (Ubuntu)
   delegate_to: "{{ server_ipv4 }}"
@@ -15,7 +15,7 @@
     src: /etc/netplan/{{ netplan_config_file.stdout }}
     dest: "/etc/netplan/{{ netplan_config_file.stdout }}.bak.{{ ansible_date_time.iso8601_micro }}"
     remote_src: true
-  when: ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy'
+  when: ansible_facts['distribution_release'] == 'jammy'
   ignore_errors: true
 
 - name: Set static IP (Ubuntu)
@@ -25,14 +25,14 @@
     src: "{{ role_path }}/templates/static_netplan.j2"
     dest: /etc/netplan/{{ netplan_config_file.stdout }}
     mode: '0600'
-  when: ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy'
+  when: ansible_facts['distribution_release'] == 'jammy'
 
 - name: Apply netplan configuration (Ubuntu)
   delegate_to: "{{ server_ipv4 }}"
   become: true
   ansible.builtin.shell: | # The sleep here is needed so that ansible can exit the SSH session before the change occurs
       nohup bash -c "sleep 1 && netplan apply" &
-  when: ansible_facts['distribution_release'] == 'focal' or ansible_facts['distribution_release'] == 'jammy'
+  when: ansible_facts['distribution_release'] == 'jammy'
 
 - name: Set static IP (Debian) 1/2
   delegate_to: "{{ server_ipv4 }}"
@@ -41,7 +41,7 @@
     path: /etc/network/interfaces
     regexp: '^iface {{ ansible_default_ipv4.interface }} inet dhcp'
     line: '#iface {{ ansible_default_ipv4.interface }} inet dhcp'
-  when: ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm'
+  when: ansible_facts['distribution_release'] in ['bookworm', 'trixie']
 
 - name: Set static IP (Debian) 2/2
   delegate_to: "{{ server_ipv4 }}"
@@ -54,7 +54,7 @@
         address {{ static_ipv4_with_mask.split('/')[0] }}
         netmask {{ ansible_default_ipv4.netmask }}
         gateway {{ ansible_default_ipv4.gateway }}
-  when: ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm'
+  when: ansible_facts['distribution_release'] in ['bookworm', 'trixie']
 
 - name: Apply the new networking configuration (Debian)
   delegate_to: "{{ server_ipv4 }}"
@@ -63,4 +63,4 @@
     nohup bash -c 'sleep 5 && systemctl restart networking' &
   async: 10
   poll: 0
-  when: ansible_facts['distribution_release'] == 'bullseye' or ansible_facts['distribution_release'] == 'bookworm'
+  when: ansible_facts['distribution_release'] in ['bookworm', 'trixie']

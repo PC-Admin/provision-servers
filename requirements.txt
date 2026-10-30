@@ -1,0 +1,4 @@
+ansible-core>=2.21,<2.22
+proxmoxer>=2.3,<3
+requests>=2.34,<3
+jmespath>=1.1,<2

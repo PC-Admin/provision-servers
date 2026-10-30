@@ -25,23 +25,23 @@
     state: absent
   when: set_static_ip | bool
 
-- name: Add the server URL to known hosts (Proxmox hosts)
+- name: Add the server URL to known hosts (Proxmox clone hosts)
   delegate_to: localhost
   known_hosts:
     name: '{{ server_url }}'
     key: "{{ server_url }} {{ proxmox_template_host_key }}"
     state: present
-  when: spawn_on_proxmox | bool
+  when: spawn_on_proxmox == 'clone'
 
-- name: Add the initial server IPv4 to known hosts (Proxmox hosts)
+- name: Add the initial server IPv4 to known hosts (Proxmox clone hosts)
   delegate_to: localhost
   known_hosts:
     name: '{{ server_ipv4 }}'
     key: "{{ server_ipv4 }} {{ proxmox_template_host_key }}"
     state: present
-  when: spawn_on_proxmox | bool
+  when: spawn_on_proxmox == 'clone'
 
-- name: Add the "Final server IPv4" to known hosts if static IP is being used (Proxmox hosts)
+- name: Add the "Final server IPv4" to known hosts if static IP is being used (Proxmox clone hosts)
   delegate_to: localhost
   known_hosts:
     name: '{{ server_ipv4_final }}'
@@ -49,7 +49,46 @@
     state: present
   when:
     - set_static_ip | bool
-    - spawn_on_proxmox | bool
+    - spawn_on_proxmox == 'clone'
+
+- name: Collect the ed25519 host key of any Proxmox ISO hosts (via the QEMU guest agent)
+  delegate_to: "{{ proxmox_node }}"
+  become: true
+  command: |
+    qm guest exec {{ vmid }} cat /etc/ssh/ssh_host_ed25519_key.pub
+  when: spawn_on_proxmox == 'iso'
+  register: iso_guest_exec
+
+- name: Record the host key of any Proxmox ISO hosts into a variable
+  set_fact:
+    iso_host_key: "{{ ( iso_guest_exec.stdout | from_json )['out-data'] | trim }}"
+  when: spawn_on_proxmox == 'iso'
+
+- name: Add the server URL to known hosts (Proxmox ISO hosts)
+  delegate_to: localhost
+  known_hosts:
+    name: '{{ server_url }}'
+    key: "{{ server_url }} {{ iso_host_key }}"
+    state: present
+  when: spawn_on_proxmox == 'iso'
+
+- name: Add the initial server IPv4 to known hosts (Proxmox ISO hosts)
+  delegate_to: localhost
+  known_hosts:
+    name: '{{ server_ipv4 }}'
+    key: "{{ server_ipv4 }} {{ iso_host_key }}"
+    state: present
+  when: spawn_on_proxmox == 'iso'
+
+- name: Add the "Final server IPv4" to known hosts if static IP is being used (Proxmox ISO hosts)
+  delegate_to: localhost
+  known_hosts:
+    name: '{{ server_ipv4_final }}'
+    key: "{{ server_ipv4_final }} {{ iso_host_key }}"
+    state: present
+  when:
+    - set_static_ip | bool
+    - spawn_on_proxmox == 'iso'
 
 - name: Collect the ed25519 host key of any DigitalOcean droplets
   delegate_to: localhost
